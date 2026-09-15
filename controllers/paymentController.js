@@ -130,6 +130,32 @@ export const confirmPayment = asyncHandler(async (req, res) => {
   }
 });
 
+// fail payment
+export const failPayment = asyncHandler(async (req, res) => {
+  const { paymentId } = req.params;
+  const userId = req.user;
+
+  const payment = await Payment.findOne({ user: userId, payment: paymentId });
+
+  if (!payment) {
+    return res.status(400).json({ message: "Payment does not exist" });
+  }
+
+  if (payment.status !== "pending") {
+    return res.status(400).json({
+      message: `Cannot fail payment with status '${payment.status}'. Only pending payments can be failed.`,
+    });
+  }
+
+  payment.status = "failed";
+  await payment.save();
+
+  return res.status(200).json({
+    message: "Payment marked as failed successfully",
+    payment,
+  });
+});
+
 // get my payment
 export const getMyPayment = asyncHandler(async (req, res) => {
   const { paymentId } = req.params;
