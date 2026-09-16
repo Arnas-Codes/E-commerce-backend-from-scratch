@@ -39,9 +39,14 @@ export const createPayment = asyncHandler(async (req, res) => {
           message: "This order's payment has already been refunded.",
         });
       case "pending":
-      default:
         return res.status(400).json({
           message: "A pending payment already exists for this order.",
+        });
+      case "failed":
+        break;
+      default:
+        return res.status(400).json({
+          message: "Payment creation rejected for this order status.",
         });
     }
   }
@@ -177,79 +182,28 @@ export const getMyPayment = asyncHandler(async (req, res) => {
 });
 
 // get my payments
-export const getMyPayments = asyncHandler(async (req, res) => {
-  const userId = req.user._id;
-
-  const payments = await Payment.find({ user: userId }).populate("order");
-
-  if (payments.length === 0) {
-    return res.status(404).json({ message: "Payment not found" });
-  }
-
-  return res.status(200).json({
-    message: "Payment retrieved successfully",
-    payments,
-  });
-});
-
-// refund payment
 export const refundPayment = asyncHandler(async (req, res) => {
   const { paymentId } = req.params;
   const userId = req.user._id;
 
-  const session = await mongoose.startSession();
-
-  try {
-    await session.withTransaction(async () => {
-      const payment = await Payment.findOne({
-        _id: paymentId,
-        user: userId,
-      }).session(session);
-      if (!payment) {
-        const error = new Error("Payment not found");
-        error.statusCode = 404;
-        throw error;
-      }
-
-      if (payment.status !== "paid") {
-        const error = new Error("Only paid payment can be refunded");
-        error.statusCode = 400;
-        throw error;
-      }
-
-      const order = await Order.findById(payment.order).session(session);
-
-      if (!order) {
-        const error = new Error("Order not found");
-        error.statusCode = 404;
-        throw error;
-      }
-
-      if (order.status === "cancelled") {
-        const error = new Error("Order is already cancelled");
-        error.statusCode = 400;
-        throw error;
-      }
-
-      for (const item of order.items) {
-        const product = await Product.findById(item.product).session(session);
-
-        if (product) {
-          product.stock += item.quantity;
-          await product.save({ session });
-        }
-      }
-
-      payment.status = "refunded";
-      await payment.save({ session });
-
-      order.status = "cancelled";
-      await order.save({ session });
-    });
-    return res.status(200).json({
-      message: "Your payment is refunded",
-    });
-  } finally {
-    session.endSession();
+  const payment = await Payment.findOne({ _id: paymentId, user: userId });
+  if (!payment) {
+    return res
+      .status(404)
+      .json({ message: "Payment not found or unauthorized" });
   }
+
+  if (payment.status !== "paid") {
+    return res
+      .status(400)
+      .json({ message: "Only paid payments can be refunded" });
+  }
+
+  payment.status = "refunded";
+  await payment.save();
+
+  return res.status(200).json({
+    success: true,
+    message: "Payment successfully refunded",
+  });
 });

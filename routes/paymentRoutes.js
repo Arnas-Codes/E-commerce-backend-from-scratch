@@ -21,8 +21,6 @@ router.get("/:paymentId", protect, validatePayment, getMyPayment);
 
 router.get("/", protect, getMyPayments);
 
-router.patch("/:paymentId/refund", protect, validatePayment, refundPayment);
-
 router.patch("/:paymentId/fail", protect, adminOnly, failPayment);
 
 export default router;

@@ -19,6 +19,7 @@ import {
   validateGetAllOrders,
 } from "../middlewares/orderValidate.js";
 import { validateRevenueQuery } from "../middlewares/RevenueQueryValidate.js";
+import { refundPayment } from "../controllers/paymentController.js";
 
 const router = express.Router();
 
@@ -54,6 +55,6 @@ router.post("/", protect, createOrder);
 router.get("/", protect, getMyOrders);
 router.get("/:orderId", protect, validateOrder, getMyOrder);
 router.patch("/:orderId/cancel", protect, validateOrder, cancelOrder);
-router.patch("/:orderId/return",protect,validateOrder,returnOrder)
+router.patch("/:orderId/return", protect, validateOrder, returnOrder);
 
 export default router;
