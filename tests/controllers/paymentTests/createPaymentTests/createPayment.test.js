@@ -107,5 +107,45 @@ describe("createPayment", () => {
     });
   });
 
-  // it("rejecrts when")
+  it.each(["processing", "shipped", "delivered", "cancelled"])(
+    "rejects when order status is invalid",
+    async (invalidStatus) => {
+      const userId = new mongoose.Types.ObjectId().toString();
+      const productId = new mongoose.Types.ObjectId().toString();
+
+      const order = await Order.create({
+        user: userId,
+        items: [
+          {
+            product: productId,
+            quantity: 1,
+            price: 500,
+          },
+        ],
+        totalPrice: 500,
+        status: invalidStatus,
+      });
+
+      const req = {
+        user: {
+          _id: userId,
+        },
+        body: {
+          orderId: order._id,
+        },
+      };
+
+      const res = {
+        status: vi.fn().mockReturnThis(),
+        json: vi.fn(),
+      };
+
+      await createPayment(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        message: `You cannot create payment. The order is already ${invalidStatus}`,
+      });
+    },
+  );
 });
