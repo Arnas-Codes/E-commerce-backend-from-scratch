@@ -270,6 +270,53 @@ describe("createPayment", () => {
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith({ message: expectedMessage });
 
-    expect()
+    expect();
+  });
+
+  it("allows creating a new payment if previous payment status was 'failed'", async () => {
+    const user = await User.create({
+      name: "Test User",
+      email: uniqueEmail(),
+      password: "password123",
+    });
+
+    const order = await Order.create({
+      user: user._id,
+      totalPrice: 500,
+      status: "pending",
+    });
+
+    await Payment.create({
+      user: user._id,
+      order: order._id,
+      amount: order.totalPrice,
+      paymentMethod: "card",
+      status: "failed",
+    });
+
+    const req = {
+      user: { _id: user._id },
+      body: { orderId: order._id, paymentMethod: "card" },
+    };
+
+    const res = {
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn(),
+    };
+
+    await createPayment(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(201);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: "Payment created successfully",
+        payment: expect.objectContaining({
+          user: user._id,
+          order: order._id,
+          amount: order.totalPrice,
+          paymentMethod: "card",
+        }),
+      }),
+    );
   });
 });
