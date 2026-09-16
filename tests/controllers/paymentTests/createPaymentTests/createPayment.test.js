@@ -209,6 +209,8 @@ describe("createPayment", () => {
     const savedPayment = await Payment.findOne({ order: order._id });
     expect(savedPayment).not.toBeNull();
     expect(savedPayment?.amount).toBe(500);
+
+    expect(savedPayment?.status).toBe("pending");
   });
 
   it.each([
@@ -269,8 +271,6 @@ describe("createPayment", () => {
 
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith({ message: expectedMessage });
-
-    expect();
   });
 
   it("allows creating a new payment if previous payment status was 'failed'", async () => {
@@ -318,5 +318,11 @@ describe("createPayment", () => {
         }),
       }),
     );
+
+    const payments = await Payment.find({ order: order._id });
+
+    expect(payments).toHaveLength(2);
+    expect(payments.some((p) => p.status === "failed")).toBe(true);
+    expect(payments.some((p) => p.status === "pending")).toBe(true);
   });
 });
