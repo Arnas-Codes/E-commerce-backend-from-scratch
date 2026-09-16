@@ -211,5 +211,65 @@ describe("createPayment", () => {
     expect(savedPayment?.amount).toBe(500);
   });
 
-  
+  it.each([
+    ["paid", "Payment has already been paid."],
+    ["refunded", "This order's payment has already been refunded."],
+    ["pending", "A pending payment already exists for this order."],
+  ])("rejects when invalid payment status", async (status, expectedMessage) => {
+    const user = await User.create({
+      name: "Test User",
+      email: uniqueEmail(),
+      password: "test-password",
+    });
+
+    const product = await Product.create({
+      name: "Test Product",
+      price: 500,
+      category: "Test",
+      stock: 10,
+    });
+
+    const order = await Order.create({
+      user: user._id,
+      items: [
+        {
+          product: product._id,
+          quantity: 1,
+          price: 500,
+        },
+      ],
+      totalPrice: 500,
+      status: "pending",
+    });
+
+    await Payment.create({
+      user: user._id,
+      order: order._id,
+      amount: order.totalPrice,
+      paymentMethod: "card",
+      status: status,
+    });
+
+    const req = {
+      user: {
+        _id: user._id,
+      },
+      body: {
+        orderId: order._id,
+        paymentMethod: "card",
+      },
+    };
+
+    const res = {
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn(),
+    };
+
+    await createPayment(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ message: expectedMessage });
+
+    expect()
+  });
 });
