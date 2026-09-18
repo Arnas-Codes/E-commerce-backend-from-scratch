@@ -1,12 +1,12 @@
 import { afterEach, beforeEach, describe, it, vi, expect } from "vitest";
-import Cart from "../../../../models/cart";
-import Order from "../../../../models/order";
-import Product from "../../../../models/product";
-import User from "../../../../models/user";
-import InventoryMovement from "../../../../models/inventoryMovement";
-import Payment from "../../../../models/payment";
+import Cart from "../../../models/cart";
+import Order from "../../../models/order";
+import Product from "../../../models/product";
+import User from "../../../models/user";
+import InventoryMovement from "../../../models/inventoryMovement";
+import Payment from "../../../models/payment";
 import mongoose from "mongoose";
-import { createPayment } from "../../../../controllers/paymentController";
+import { createPayment } from "../../../controllers/paymentController";
 
 const uniqueEmail = () =>
   `test_${Date.now()}_${Math.random().toString(36).substring(7)}@example.com`;

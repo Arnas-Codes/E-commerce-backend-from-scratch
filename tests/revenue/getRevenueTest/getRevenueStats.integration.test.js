@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import User from "../../../../models/user.js";
-import Product from "../../../../models/product.js";
-import Order from "../../../../models/order.js";
-import { getRevenueStats } from "../../../../controllers/orderController.js";
+import User from "../../../models/user.js";
+import Product from "../../../models/product.js";
+import Order from "../../../models/order.js";
+import { getRevenueStats } from "../../../controllers/orderController.js";
 
 const uniqueEmail = () =>
   `test_${Date.now()}_${Math.random().toString(36).substring(7)}@example.com`;
