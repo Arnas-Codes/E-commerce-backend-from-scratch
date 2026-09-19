@@ -11,6 +11,7 @@ describe("createOrder", () => {
   let fakeSession;
   let req;
   let res;
+  let next;
 
   beforeEach(() => {
     fakeSession = {
@@ -27,6 +28,8 @@ describe("createOrder", () => {
     status: vi.fn().mockReturnThis(),
     json: vi.fn(),
   };
+
+  next = vi.fn();
 
   afterEach(() => {
     vi.resetAllMocks();
@@ -105,9 +108,40 @@ describe("createOrder", () => {
     expect(fakeSession.endSession).toHaveBeenCalled();
   });
 
-  // it("throws an error when cart is empty",async()=>{
-  //   vi.spyOn(mongoose,"startSession").mockResolvedValue()
+  it("throws an error when cart is empty", async () => {
+    vi.spyOn(mongoose, "startSession").mockResolvedValue(fakeSession);
 
-  //   fakeSession.withTransaction
-  // })
+    fakeSession.withTransaction.mockImplementation(async (callback) => {
+      await callback();
+    });
+
+    vi.spyOn(Cart, "findOne").mockReturnValue({
+      session: vi.fn().mockResolvedValue(null),
+    });
+
+    await createOrder(req, res, next);
+
+    const responseData = next.mock.calls[0][0];
+    expect(responseData.statusCode).toBe(400);
+    expect(responseData.message).toBe("Cart is empty");
+  });
+
+  it("throws an error when product not found", async () => {
+    vi.spyOn(mongoose, "startSession").mockResolvedValue(fakeSession);
+
+    fakeSession.withTransaction.mockImplementation(async (callback) => {
+      await callback;
+    });
+
+    const fakeCart = {
+      items: [
+        {
+          product: "product1",
+          quantity: 2, 
+        },
+      ],
+    };
+
+    
+  });
 });
