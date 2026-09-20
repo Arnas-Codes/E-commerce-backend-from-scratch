@@ -18,6 +18,11 @@ describe("createOrder", () => {
       withTransaction: vi.fn(),
       endSession: vi.fn(),
     };
+    vi.spyOn(mongoose, "startSession").mockResolvedValue(fakeSession);
+
+    fakeSession.withTransaction.mockImplementation(async (callback) => {
+      await callback();
+    });
   });
 
   req = {
@@ -36,12 +41,6 @@ describe("createOrder", () => {
   });
 
   it("creates an order successfully", async () => {
-    vi.spyOn(mongoose, "startSession").mockResolvedValue(fakeSession);
-
-    fakeSession.withTransaction.mockImplementation(async (callback) => {
-      await callback();
-    });
-
     const fakeCart = {
       items: [
         {
@@ -109,12 +108,6 @@ describe("createOrder", () => {
   });
 
   it("throws an error when cart is empty", async () => {
-    vi.spyOn(mongoose, "startSession").mockResolvedValue(fakeSession);
-
-    fakeSession.withTransaction.mockImplementation(async (callback) => {
-      await callback();
-    });
-
     vi.spyOn(Cart, "findOne").mockReturnValue({
       session: vi.fn().mockResolvedValue(null),
     });
@@ -127,12 +120,6 @@ describe("createOrder", () => {
   });
 
   it("throws an error when product not found", async () => {
-    vi.spyOn(mongoose, "startSession").mockResolvedValue(fakeSession);
-
-    fakeSession.withTransaction.mockImplementation(async (callback) => {
-      await callback();
-    });
-
     const fakeCart = {
       items: [
         {
@@ -157,4 +144,35 @@ describe("createOrder", () => {
     expect(responseData.message).toBe("Product not found");
   });
 
+  it("throws an error when not enough product stock", async () => {
+    const fakeCart = {
+      items: [
+        {
+          product: "product1",
+          quantity: 2,
+        },
+      ],
+    };
+
+    vi.spyOn(Cart, "findOne").mockReturnValue({
+      session: vi.fn().mockResolvedValue(fakeCart),
+    });
+
+    const fakeProduct = {
+      _id: "product1",
+      price: 100,
+      stock: 0,
+      save: vi.fn(),
+    };
+
+    vi.spyOn(Product, "findById").mockReturnValue({
+      session: vi.fn().mockResolvedValue(fakeProduct),
+    });
+
+    await createOrder(req, res, next);
+
+    const responeData = next.mock.calls[0][0];
+    expect(responeData.statusCode).toBe(400);
+    expect(responeData.message).toBe("Not enough stock");
+  });
 });
