@@ -130,18 +130,31 @@ describe("createOrder", () => {
     vi.spyOn(mongoose, "startSession").mockResolvedValue(fakeSession);
 
     fakeSession.withTransaction.mockImplementation(async (callback) => {
-      await callback;
+      await callback();
     });
 
     const fakeCart = {
       items: [
         {
           product: "product1",
-          quantity: 2, 
+          quantity: 2,
         },
       ],
     };
 
-    
+    vi.spyOn(Cart, "findOne").mockReturnValue({
+      session: vi.fn().mockResolvedValue(fakeCart),
+    });
+
+    vi.spyOn(Product, "findById").mockReturnValue({
+      session: vi.fn().mockResolvedValue(null),
+    });
+
+    await createOrder(req, res, next);
+
+    const responseData = next.mock.calls[0][0];
+    expect(responseData.statusCode).toBe(404);
+    expect(responseData.message).toBe("Product not found");
   });
+
 });
