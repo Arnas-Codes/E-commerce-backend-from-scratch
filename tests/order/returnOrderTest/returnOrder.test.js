@@ -190,4 +190,39 @@ describe("returnOrder", () => {
       "Duplicate product entries in return request",
     );
   });
+  it.each([null, undefined, -1, 0, "1", 1.5])(
+    "throws an error when item quantity is invalid: %s",
+    async (invalidQuantity) => {
+      req.body.items = [
+        {
+          product: "product1",
+          quantity: invalidQuantity,
+        },
+      ];
+
+      const fakeOrder = {
+        _id: "order1",
+        status: "delivered",
+        items: [
+          {
+            product: "product1",
+            quantity: 2,
+            returnedQuantity: 0,
+            price: 500,
+          },
+        ],
+      };
+
+      vi.spyOn(Order, "findOne").mockReturnValue({
+        session: vi.fn().mockResolvedValue(fakeOrder),
+      });
+
+      await returnOrder(req, res, next);
+
+      const responseData = next.mock.calls[0][0];
+
+      expect(responseData.statusCode).toBe(400);
+      expect(responseData.message).toBe("Quantity must be a positive integer");
+    },
+  );
 });
