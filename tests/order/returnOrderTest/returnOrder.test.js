@@ -265,4 +265,46 @@ describe("returnOrder", () => {
     expect(responseData.statusCode).toBe(400);
     expect(responseData.message).toBe("Product is not part of this order");
   });
+
+  it("throws error when return quantity is more than returnableQuantity", async () => {
+    const fakeOrder = {
+      items: [
+        {
+          product: "product1",
+          quantity: 2,
+          returnedQuantity: 2,
+          price: 500,
+        },
+      ],
+      totalPrice: 1000,
+      status: "delivered",
+      save: vi.fn(),
+    };
+
+    vi.spyOn(Order, "findOne").mockReturnValue({
+      session: vi.fn().mockResolvedValue(fakeOrder),
+    });
+
+    const existingProduct = {
+      name: "product1",
+      price: 500,
+      stock: 10,
+      save: vi.fn(),
+    };
+
+    vi.spyOn(Product, "findById").mockReturnValue({
+      session: vi.fn().mockResolvedValue(existingProduct),
+    });
+
+    vi.spyOn(InventoryMovement, "create").mockResolvedValue([]);
+
+    await returnOrder(req, res, next);
+
+    const responseData = next.mock.calls[0][0];
+
+    expect(responseData.statusCode).toBe(400);
+    expect(responseData.message).toBe("Cannot return 1. Only 0 item(s) can be returned.");
+  });
+
+  
 });
