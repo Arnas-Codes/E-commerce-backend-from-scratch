@@ -89,5 +89,78 @@ describe("returnOrder", () => {
       message: "Order items returned successfully",
       inventoryMovements: expect.anything(),
     });
+
+    expect(existingProduct.stock).toBe(11);
+    expect(fakeOrder.items[0].returnedQuantity).toBe(2);
+    expect(fakeOrder.save).toHaveBeenCalled();
+    expect(existingProduct.save).toHaveBeenCalled();
   });
+
+  it("throw a error when order not found", async () => {
+    vi.spyOn(Order, "findOne").mockReturnValue({
+      session: vi.fn().mockResolvedValue(null),
+    });
+
+    await returnOrder(req, res, next);
+
+    const responseData = next.mock.calls[0][0];
+
+    expect(responseData.statusCode).toBe(404);
+    expect(responseData.message).toBe("Order not found");
+  });
+  it.each(["pending", "processing", "shipped", "cancelled"])(
+    "throws error when order status is '%s'",
+    async (invalidStatus) => {
+      const fakeOrder = {
+        items: [
+          {
+            product: "product1",
+            quantity: 2,
+            returnedQuantity: 1,
+            price: 500,
+          },
+        ],
+        totalPrice: 1000,
+        status: invalidStatus,
+        save: vi.fn(),
+      };
+
+      vi.spyOn(Order, "findOne").mockReturnValue({
+        session: vi.fn().mockResolvedValue(fakeOrder),
+      });
+
+      await returnOrder(req, res, next);
+
+      const responseData = next.mock.calls[0][0];
+
+      expect(responseData.statusCode).toBe(400);
+      expect(responseData.message).toBe(
+        "Only delivered orders can be returned",
+      );
+    },
+  );
+
+  it.each([[], {}, null, undefined])(
+    "throws error when return items in body are %s",
+    async (invalidItems) => {
+      req.body.items = invalidItems;
+
+      const fakeOrder = {
+        _id: "order1",
+        status: "delivered",
+        items: [],
+      };
+
+      vi.spyOn(Order, "findOne").mockReturnValue({
+        session: vi.fn().mockResolvedValue(fakeOrder),
+      });
+
+      await returnOrder(req, res, next);
+
+      const responseData = next.mock.calls[0][0];
+
+      expect(responseData.statusCode).toBe(400);
+      expect(responseData.message).toBe("Return items are required");
+    },
+  );
 });
