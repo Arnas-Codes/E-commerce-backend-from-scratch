@@ -225,4 +225,44 @@ describe("returnOrder", () => {
       expect(responseData.message).toBe("Quantity must be a positive integer");
     },
   );
+
+  it("throws error when Product is not part of this order", async () => {
+    const fakeOrder = {
+      items: [
+        {
+          product: "product2",
+          quantity: 2,
+          returnedQuantity: 1,
+          price: 500,
+        },
+      ],
+      totalPrice: 1000,
+      status: "delivered",
+      save: vi.fn(),
+    };
+
+    vi.spyOn(Order, "findOne").mockReturnValue({
+      session: vi.fn().mockResolvedValue(fakeOrder),
+    });
+
+    const existingProduct = {
+      name: "product1",
+      price: 500,
+      stock: 10,
+      save: vi.fn(),
+    };
+
+    vi.spyOn(Product, "findById").mockReturnValue({
+      session: vi.fn().mockResolvedValue(existingProduct),
+    });
+
+    vi.spyOn(InventoryMovement, "create").mockResolvedValue([]);
+
+    await returnOrder(req, res, next);
+
+    const responseData = next.mock.calls[0][0];
+
+    expect(responseData.statusCode).toBe(400);
+    expect(responseData.message).toBe("Product is not part of this order");
+  });
 });
