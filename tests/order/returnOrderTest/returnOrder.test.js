@@ -52,6 +52,7 @@ describe("returnOrder", () => {
 
   it("returns an order successfully", async () => {
     const fakeOrder = {
+      _id: "order1",
       items: [
         {
           product: "product1",
@@ -70,6 +71,7 @@ describe("returnOrder", () => {
     });
 
     const existingProduct = {
+      _id: "product1",
       name: "product1",
       price: 500,
       stock: 10,
@@ -96,7 +98,7 @@ describe("returnOrder", () => {
     expect(existingProduct.save).toHaveBeenCalled();
   });
 
-  it("throw a error when order not found", async () => {
+  it("throws an error when order not found", async () => {
     vi.spyOn(Order, "findOne").mockReturnValue({
       session: vi.fn().mockResolvedValue(null),
     });
@@ -108,6 +110,7 @@ describe("returnOrder", () => {
     expect(responseData.statusCode).toBe(404);
     expect(responseData.message).toBe("Order not found");
   });
+
   it.each(["pending", "processing", "shipped", "cancelled"])(
     "throws error when order status is '%s'",
     async (invalidStatus) => {
@@ -141,7 +144,7 @@ describe("returnOrder", () => {
   );
 
   it.each([[], {}, null, undefined])(
-    "throws error when return items in body are %s",
+    "throws error when return items in body are $0",
     async (invalidItems) => {
       req.body.items = invalidItems;
 
@@ -163,6 +166,7 @@ describe("returnOrder", () => {
       expect(responseData.message).toBe("Return items are required");
     },
   );
+
   it("throws error when there are duplicate product entries in return request", async () => {
     req.body.items = [
       { product: "product1", quantity: 1 },
@@ -190,8 +194,9 @@ describe("returnOrder", () => {
       "Duplicate product entries in return request",
     );
   });
+
   it.each([null, undefined, -1, 0, "1", 1.5])(
-    "throws an error when item quantity is invalid: %s",
+    "throws an error when item quantity is invalid: $0",
     async (invalidQuantity) => {
       req.body.items = [
         {
@@ -226,7 +231,7 @@ describe("returnOrder", () => {
     },
   );
 
-  it("throws error when Product is not part of this order", async () => {
+  it("throws error when product is not part of this order", async () => {
     const fakeOrder = {
       items: [
         {
@@ -244,19 +249,6 @@ describe("returnOrder", () => {
     vi.spyOn(Order, "findOne").mockReturnValue({
       session: vi.fn().mockResolvedValue(fakeOrder),
     });
-
-    const existingProduct = {
-      name: "product1",
-      price: 500,
-      stock: 10,
-      save: vi.fn(),
-    };
-
-    vi.spyOn(Product, "findById").mockReturnValue({
-      session: vi.fn().mockResolvedValue(existingProduct),
-    });
-
-    vi.spyOn(InventoryMovement, "create").mockResolvedValue([]);
 
     await returnOrder(req, res, next);
 
@@ -285,26 +277,44 @@ describe("returnOrder", () => {
       session: vi.fn().mockResolvedValue(fakeOrder),
     });
 
-    const existingProduct = {
-      name: "product1",
-      price: 500,
-      stock: 10,
-      save: vi.fn(),
-    };
-
-    vi.spyOn(Product, "findById").mockReturnValue({
-      session: vi.fn().mockResolvedValue(existingProduct),
-    });
-
-    vi.spyOn(InventoryMovement, "create").mockResolvedValue([]);
-
     await returnOrder(req, res, next);
 
     const responseData = next.mock.calls[0][0];
 
     expect(responseData.statusCode).toBe(400);
-    expect(responseData.message).toBe("Cannot return 1. Only 0 item(s) can be returned.");
+    expect(responseData.message).toBe(
+      "Cannot return 1. Only 0 item(s) can be returned.",
+    );
   });
 
-  
+  it("throws error when product does not exist in database", async () => {
+    const fakeOrder = {
+      items: [
+        {
+          product: "product1",
+          quantity: 2,
+          returnedQuantity: 0,
+          price: 500,
+        },
+      ],
+      totalPrice: 1000,
+      status: "delivered",
+      save: vi.fn(),
+    };
+
+    vi.spyOn(Order, "findOne").mockReturnValue({
+      session: vi.fn().mockResolvedValue(fakeOrder),
+    });
+
+    vi.spyOn(Product, "findById").mockReturnValue({
+      session: vi.fn().mockResolvedValue(null),
+    });
+
+    await returnOrder(req, res, next);
+
+    const responseData = next.mock.calls[0][0];
+
+    expect(responseData.statusCode).toBe(404);
+    expect(responseData.message).toBe("Product not found");
+  });
 });
