@@ -163,4 +163,31 @@ describe("returnOrder", () => {
       expect(responseData.message).toBe("Return items are required");
     },
   );
+  it("throws error when there are duplicate product entries in return request", async () => {
+    req.body.items = [
+      { product: "product1", quantity: 1 },
+      { product: "product1", quantity: 1 },
+    ];
+
+    const fakeOrder = {
+      _id: "order1",
+      status: "delivered",
+      items: [
+        { product: "product1", quantity: 2, returnedQuantity: 0, price: 500 },
+      ],
+    };
+
+    vi.spyOn(Order, "findOne").mockReturnValue({
+      session: vi.fn().mockResolvedValue(fakeOrder),
+    });
+
+    await returnOrder(req, res, next);
+
+    const responseData = next.mock.calls[0][0];
+
+    expect(responseData.statusCode).toBe(400);
+    expect(responseData.message).toBe(
+      "Duplicate product entries in return request",
+    );
+  });
 });
