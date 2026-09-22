@@ -53,7 +53,6 @@ describe("createPayment", () => {
     });
   });
 
-
   it("throws error when order not found", async () => {
     vi.spyOn(Order, "findOne").mockResolvedValue(null);
 
@@ -64,4 +63,21 @@ describe("createPayment", () => {
       message: "Order not found",
     });
   });
+
+  it.each(["processing", "shipped", "delivered", "cancelled"])(
+    "throws error when order status is invalid: %s",
+    async (invalidOrder) => {
+      const fakeOrder = {
+        status: invalidOrder,
+      };
+      vi.spyOn(Order, "findOne").mockResolvedValue(fakeOrder);
+
+      await createPayment(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        message: `You cannot create payment. The order is already ${invalidOrder}`,
+      });
+    },
+  );
 });
