@@ -83,22 +83,26 @@ describe("createPayment", () => {
     ["paid", "Payment has already been paid."],
     ["refunded", "This order's payment has already been refunded."],
     ["pending", "A pending payment already exists for this order."],
-  ])("rejects when invalid payment status: %s", async (status, expectedMessage) => {
-    const fakeOrder = {
-      status: "pending",
-    };
+    ["unrecognized_status", "Payment creation rejected for this order status."],
+  ])(
+    "rejects when invalid payment status: %s",
+    async (status, expectedMessage) => {
+      const fakeOrder = {
+        status: "pending",
+      };
 
-    vi.spyOn(Order, "findOne").mockResolvedValue(fakeOrder);
+      vi.spyOn(Order, "findOne").mockResolvedValue(fakeOrder);
 
-    const existingPayment = {
-      status,
-    };
+      const existingPayment = {
+        status,
+      };
 
-    vi.spyOn(Payment, "findOne").mockResolvedValue(existingPayment);
+      vi.spyOn(Payment, "findOne").mockResolvedValue(existingPayment);
 
-    await createPayment(req, res);
+      await createPayment(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith({ message: expectedMessage });
-  });
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ message: expectedMessage });
+    },
+  );
 });
