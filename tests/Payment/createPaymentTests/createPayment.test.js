@@ -52,4 +52,16 @@ describe("createPayment", () => {
       payment: expect.anything(),
     });
   });
+
+
+  it("throws error when order not found", async () => {
+    vi.spyOn(Order, "findOne").mockResolvedValue(null);
+
+    await createPayment(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({
+      message: "Order not found",
+    });
+  });
 });
