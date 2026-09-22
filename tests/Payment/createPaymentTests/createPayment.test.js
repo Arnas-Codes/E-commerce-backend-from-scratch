@@ -11,24 +11,24 @@ describe("createPayment", () => {
   beforeEach(async () => {
     await Order.deleteMany({});
     await Payment.deleteMany({});
+
+    req = {
+      user: { _id: "user1" },
+      body: {
+        orderId: "order1",
+        paymentMethod: "card",
+      },
+    };
+
+    res = {
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn(),
+    };
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
   });
-
-  req = {
-    user: { _id: "user1" },
-    body: {
-      orderId: "order1",
-      paymentMethod: "card",
-    },
-  };
-
-  res = {
-    status: vi.fn().mockReturnThis(),
-    json: vi.fn(),
-  };
 
   it("creates payment succesfully", async () => {
     const fakeOrder = {
@@ -105,4 +105,38 @@ describe("createPayment", () => {
       expect(res.json).toHaveBeenCalledWith({ message: expectedMessage });
     },
   );
+
+  it("creates new payment when previous payment fails", async () => {
+    const fakeOrder = {
+      status: "pending",
+      totalPrice: 100,
+    };
+
+    vi.spyOn(Order, "findOne").mockResolvedValue(fakeOrder);
+
+    const existingPayment = {
+      status: "failed",
+    };
+
+    vi.spyOn(Payment, "findOne").mockResolvedValue(existingPayment);
+    const createdPayment = {
+      _id: "payment1",
+    };
+
+    vi.spyOn(Payment, "create").mockResolvedValue(createdPayment);
+    await createPayment(req, res);
+
+    expect(Payment.create).toHaveBeenCalledWith({
+      user: "user1",
+      order: "order1",
+      amount: 100,
+      paymentMethod: "card",
+    });
+    
+    expect(res.status).toHaveBeenCalledWith(201);
+    expect(res.json).toHaveBeenCalledWith({
+      message: "Payment created successfully",
+      payment: createdPayment,
+    });
+  });
 });
