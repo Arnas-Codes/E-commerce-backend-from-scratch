@@ -30,8 +30,6 @@ describe("createPayment", () => {
     json: vi.fn(),
   };
 
-  next = vi.fn();
-
   it("creates payment succesfully", async () => {
     const fakeOrder = {
       status: "pending",
@@ -80,4 +78,27 @@ describe("createPayment", () => {
       });
     },
   );
+
+  it.each([
+    ["paid", "Payment has already been paid."],
+    ["refunded", "This order's payment has already been refunded."],
+    ["pending", "A pending payment already exists for this order."],
+  ])("rejects when invalid payment status: %s", async (status, expectedMessage) => {
+    const fakeOrder = {
+      status: "pending",
+    };
+
+    vi.spyOn(Order, "findOne").mockResolvedValue(fakeOrder);
+
+    const existingPayment = {
+      status,
+    };
+
+    vi.spyOn(Payment, "findOne").mockResolvedValue(existingPayment);
+
+    await createPayment(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ message: expectedMessage });
+  });
 });
