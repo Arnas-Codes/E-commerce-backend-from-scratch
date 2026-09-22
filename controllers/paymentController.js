@@ -1,7 +1,6 @@
 import Order from "../models/order.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import Payment from "../models/payment.js";
-import Product from "../models/product.js";
 import mongoose from "mongoose";
 
 // create payment

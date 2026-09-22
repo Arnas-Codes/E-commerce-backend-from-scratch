@@ -6,7 +6,6 @@ import {
   failPayment,
   getMyPayment,
   getMyPayments,
-  refundPayment,
 } from "../controllers/paymentController.js";
 import { validatePayment } from "../middlewares/paymentValidate.js";
 import { adminOnly } from "../middlewares/authValidateMiddlewares/authMiddleware.js";
