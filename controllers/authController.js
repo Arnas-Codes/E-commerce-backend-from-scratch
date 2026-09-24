@@ -10,6 +10,19 @@ export const register = asyncHandler(async (req, res) => {
   const existingUser = await User.findOne({
     email,
   });
+
+  if (typeof email !== "string" || !email.includes("@") || !email.includes(".") || email.length < 5) {
+    return res.status(400).json({
+      message: "Invalid email",
+    });
+  }
+
+  if (typeof password !== "string" || password.length < 6) {
+    return res.status(400).json({
+      message: "Password must be at least 6 characters long",
+    });
+  }
+
   if (existingUser) {
     return res.status(409).json({
       message: "Email already exists",
@@ -17,7 +30,7 @@ export const register = asyncHandler(async (req, res) => {
   }
   const hashedPassword = await bcrypt.hash(password, 10);
 
-  const newUser = await User.create({
+  await User.create({
     name,
     email,
     password: hashedPassword,
