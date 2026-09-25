@@ -1,49 +1,41 @@
 import asyncHandler from "../utils/asyncHandler.js";
-
 import User from "../models/user.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
 export const register = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
+  const normalizedEmail = email.trim().toLowerCase();
 
   const existingUser = await User.findOne({
-    email,
+    email: normalizedEmail,
   });
-
-  if (typeof email !== "string" || !email.includes("@") || !email.includes(".") || email.length < 5) {
-    return res.status(400).json({
-      message: "Invalid email",
-    });
-  }
-
-  if (typeof password !== "string" || password.length < 6) {
-    return res.status(400).json({
-      message: "Password must be at least 6 characters long",
-    });
-  }
 
   if (existingUser) {
     return res.status(409).json({
       message: "Email already exists",
     });
   }
+
   const hashedPassword = await bcrypt.hash(password, 10);
 
   await User.create({
     name,
-    email,
+    email: normalizedEmail,
     password: hashedPassword,
   });
+
   return res.status(201).json({ message: "User is created" });
 });
 
 export const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
+  const normalizedEmail = email.trim().toLowerCase();
 
   const existingUser = await User.findOne({
-    email,
+    email: normalizedEmail,
   });
+
   if (!existingUser) {
     return res.status(401).json({
       message: "Invalid email or password",
@@ -56,6 +48,7 @@ export const login = asyncHandler(async (req, res) => {
       message: "Invalid email or password",
     });
   }
+
   const token = jwt.sign(
     {
       userId: existingUser._id,
@@ -64,7 +57,7 @@ export const login = asyncHandler(async (req, res) => {
     process.env.JWT_SECRET,
     {
       expiresIn: "7d",
-    },
+    }
   );
 
   return res.status(200).json({

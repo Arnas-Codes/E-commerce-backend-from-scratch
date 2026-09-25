@@ -1,4 +1,5 @@
 import express from "express";
+import mongoSanitize from "express-mongo-Sanitize";
 
 import errorHandler from "./middlewares/errorMiddleware.js";
 
@@ -9,11 +10,12 @@ import cartRoutes from "./routes/cartRoutes.js";
 import orderRoutes from "./routes/ordersRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import InventoryMovementRoutes from "./routes/inventoryMovementRoutes.js";
-import inventoryRoutes from "./routes/inventoryRoutes.js"
+import inventoryRoutes from "./routes/inventoryRoutes.js";
 
 const app = express();
 
 app.use(express.json());
+app.use(mongoSanitize());
 
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.url}`);
@@ -27,7 +29,7 @@ app.use("/cart", cartRoutes);
 app.use("/orders", orderRoutes);
 app.use("/payment", paymentRoutes);
 app.use("/inventory-movements", InventoryMovementRoutes);
-app.use("/inventory",inventoryRoutes)
+app.use("/inventory", inventoryRoutes);
 
 app.use(errorHandler);
 
