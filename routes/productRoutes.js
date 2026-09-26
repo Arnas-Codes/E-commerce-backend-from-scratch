@@ -16,10 +16,11 @@ import {
 } from "../middlewares/validateProduct.js";
 import { adminOnly, protect } from "../middlewares/authMiddleware.js";
 import { authorizeAdmin } from "../middlewares/authorizeAdmin.js";
+import { getProductValidation } from "../middlewares/productValidateMiddlewares/validateGetProduct.js";
 
 const router = express.Router();
 
-router.get("/", getProducts);
+router.get("/", getProductValidation, getProducts);
 
 router.get("/:id", getProductById);
 
