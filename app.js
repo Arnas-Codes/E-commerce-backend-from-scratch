@@ -1,5 +1,6 @@
 import express from "express";
 import mongoSanitize from "express-mongo-sanitize";
+import { apiLimiter } from "./middlewares/authValidateMiddlewares/rateLimit.js";
 
 import errorHandler from "./middlewares/authValidateMiddlewares/errorMiddleware.js";
 
@@ -14,8 +15,10 @@ import inventoryRoutes from "./routes/inventoryRoutes.js";
 
 const app = express();
 
+
 app.use(express.json());
 app.use(mongoSanitize());
+app.use(apiLimiter);
 
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.url}`);

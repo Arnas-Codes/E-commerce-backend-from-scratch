@@ -4,10 +4,14 @@ import {
   validateRegister,
   validateLogin,
 } from "../middlewares/authValidateMiddlewares/authValidate.js";
+import {
+  registerLimiter,
+  loginLimiter,
+} from "../middlewares/authValidateMiddlewares/rateLimit.js";
 const router = express.Router();
 
-router.post("/register", validateRegister, register);
+router.post("/register", registerLimiter, validateRegister, register);
 
-router.post("/login", validateLogin, login);
+router.post("/login", loginLimiter, validateLogin, login);
 
 export default router;
