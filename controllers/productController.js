@@ -56,7 +56,13 @@ export const getProducts = asyncHandler(async (req, res) => {
 
 // Getting product by id
 export const getProductById = asyncHandler(async (req, res) => {
-  const product = await Product.findById(req.params.id);
+  const { id } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({
+      message: "Invalid product ID",
+    });
+  }
+  const product = await Product.findById(id);
   if (!product) {
     return res.status(404).json({
       message: "Product not found",
@@ -67,16 +73,32 @@ export const getProductById = asyncHandler(async (req, res) => {
 });
 
 export const createProduct = asyncHandler(async (req, res) => {
-  const newProduct = await Product.create(req.body);
+  const { name, price, category, description, stock } = req.body;
+  const newProduct = await Product.create({
+    name,
+    price,
+    category,
+    description,
+    stock
+  });
 
   res.status(201).json(newProduct);
 });
 
 // Updating product
 export const updateProduct = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { name, price, category, description, stock } = req.body;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({
+      message: "Invalid product ID",
+    });
+  }
+
   const updatedProduct = await Product.findByIdAndUpdate(
-    req.params.id,
-    req.body,
+    id,
+    { name, price, category, description, stock },
     { new: true },
   );
 
@@ -90,7 +112,15 @@ export const updateProduct = asyncHandler(async (req, res) => {
 
 // Deleting Product
 export const deleteProduct = asyncHandler(async (req, res) => {
-  const deletedProduct = await Product.findByIdAndDelete(req.params.id);
+  const { id } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({
+      message: "Invalid product ID",
+    });
+  }
+
+  const deletedProduct = await Product.findByIdAndDelete(id);
   if (!deletedProduct) {
     return res.status(404).json({
       message: "Product not found",
@@ -105,6 +135,12 @@ export const deleteProduct = asyncHandler(async (req, res) => {
 export const updateStock = asyncHandler(async (req, res) => {
   const { productId } = req.params;
   const { stock } = req.body;
+
+  if (!mongoose.Types.ObjectId.isValid(productId)) {
+    return res.status(400).json({
+      message: "Invalid product ID",
+    });
+  }
 
   const product = await Product.findById(productId);
 
