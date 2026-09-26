@@ -15,7 +15,6 @@ import inventoryRoutes from "./routes/inventoryRoutes.js";
 
 const app = express();
 
-
 app.use(express.json());
 app.use(mongoSanitize());
 app.use(apiLimiter);
