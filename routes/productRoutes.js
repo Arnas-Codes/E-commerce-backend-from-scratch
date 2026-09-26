@@ -13,9 +13,9 @@ import {
   validateProduct,
   validateStock,
   validateStockAdjustment,
-} from "../middlewares/validateProduct.js";
-import { adminOnly, protect } from "../middlewares/authMiddleware.js";
-import { authorizeAdmin } from "../middlewares/authorizeAdmin.js";
+} from "../middlewares/productValidateMiddlewares/validateProduct.js";
+import { adminOnly, protect } from "../middlewares/authValidateMiddlewares/authMiddleware.js";
+import { authorizeAdmin } from "../middlewares/authValidateMiddlewares/authorizeAdmin.js";
 import { getProductValidation } from "../middlewares/productValidateMiddlewares/validateGetProduct.js";
 
 const router = express.Router();

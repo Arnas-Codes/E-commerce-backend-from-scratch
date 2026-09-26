@@ -1,14 +1,14 @@
 import express from "express";
-import { adminOnly, protect } from "../middlewares/authMiddleware";
+import { adminOnly, protect } from "../middlewares/authValidateMiddlewares/authMiddleware.js";
 import {
   damageInventory,
   restockInventory,
   setInventory,
-} from "../controllers/inventoryController";
+} from "../controllers/inventoryController.js";
 import {
   validateInventoryMovement,
   validateSetInventory,
-} from "../middlewares/inventoryValidate";
+} from "../middlewares/inventoryValidateMiddlewares/inventoryValidate.js";
 
 const router = express.Router();
 

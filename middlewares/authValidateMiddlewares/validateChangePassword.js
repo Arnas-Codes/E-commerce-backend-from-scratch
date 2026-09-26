@@ -1,4 +1,4 @@
-export const validateChangePassword = (req, res, next) => {
+export const validateChangedPassword = (req, res, next) => {
   const { currentPassword, newPassword } = req.body;
   if (!currentPassword || !newPassword) {
     return res.status(400).json({
@@ -7,3 +7,4 @@ export const validateChangePassword = (req, res, next) => {
   }
   next()
 };
+

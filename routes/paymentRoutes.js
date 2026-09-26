@@ -1,5 +1,5 @@
 import express from "express";
-import { protect } from "../middlewares/authMiddleware.js";
+import { protect } from "../middlewares/authValidateMiddlewares/authMiddleware.js";
 import {
   confirmPayment,
   createPayment,
@@ -7,7 +7,7 @@ import {
   getMyPayment,
   getMyPayments,
 } from "../controllers/paymentController.js";
-import { validatePayment } from "../middlewares/paymentValidate.js";
+import { validatePayment } from "../middlewares/paymentValidateMiddlewares/paymentValidate.js";
 import { adminOnly } from "../middlewares/authValidateMiddlewares/authMiddleware.js";
 
 const router = express.Router();

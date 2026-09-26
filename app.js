@@ -1,7 +1,7 @@
 import express from "express";
-import mongoSanitize from "express-mongo-Sanitize";
+import mongoSanitize from "express-mongo-sanitize";
 
-import errorHandler from "./middlewares/errorMiddleware.js";
+import errorHandler from "./middlewares/authValidateMiddlewares/errorMiddleware.js";
 
 import productRoutes from "./routes/productRoutes.js";
 import authRoutes from "./routes/authRoutes.js";

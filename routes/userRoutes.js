@@ -1,9 +1,9 @@
 import express from "express";
 import { changePassword, deleteAccount, getProfile } from "../controllers/userController.js";
-import { protect } from "../middlewares/authMiddleware.js";
-import { validateUpdateProfile } from "../middlewares/userValidate.js";
+import { protect } from "../middlewares/authValidateMiddlewares/authMiddleware.js";
+import { validateUpdateProfile } from "../middlewares/userValidateMiddlewares/userValidate.js";
 import { updateProfile } from "../controllers/userController.js";
-import { validateChangePassword } from "../middlewares/validateChangePassword.js";
+import { validateChangedPassword } from "../middlewares/authValidateMiddlewares/validateChangePassword.js";
 
 const router = express.Router();
 
@@ -14,7 +14,7 @@ router.patch("/profile", protect, validateUpdateProfile, updateProfile);
 router.patch(
   "/change-password",
   protect,
-  validateChangePassword,
+  validateChangedPassword,
   changePassword,
 );
 

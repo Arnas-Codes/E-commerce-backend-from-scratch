@@ -136,10 +136,9 @@ export const confirmPayment = asyncHandler(async (req, res) => {
 
 // fail payment
 export const failPayment = asyncHandler(async (req, res) => {
-  const { paymentId } = req.params;
-  const userId = req.user;
+  const userId = req.user._id;
 
-  const payment = await Payment.findOne({ user: userId, payment: paymentId });
+  const payment = await Payment.findOne({ user: userId });
 
   if (!payment) {
     return res.status(400).json({ message: "Payment does not exist" });
@@ -181,6 +180,21 @@ export const getMyPayment = asyncHandler(async (req, res) => {
 });
 
 // get my payments
+export const getMyPayments = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+
+  const payments = await Payment.find({ user: userId }).populate("order");
+
+  if (!payments || payments.length === 0) {
+    return res.status(404).json({ message: "No payments found for this user" });
+  }
+
+  return res.status(200).json({
+    message: "Payments retrieved successfully",
+    payments,
+  });
+});
+
 export const refundPayment = asyncHandler(async (req, res) => {
   const { paymentId } = req.params;
   const userId = req.user._id;

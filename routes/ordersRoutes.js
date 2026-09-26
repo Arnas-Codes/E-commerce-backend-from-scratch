@@ -1,5 +1,5 @@
 import express from "express";
-import { adminOnly, protect } from "../middlewares/authMiddleware.js";
+import { adminOnly, protect } from "../middlewares/authValidateMiddlewares/authMiddleware.js";
 import {
   cancelOrder,
   createOrder,
@@ -17,9 +17,8 @@ import {
   validateOrder,
   validateOrderStatus,
   validateGetAllOrders,
-} from "../middlewares/orderValidate.js";
-import { validateRevenueQuery } from "../middlewares/RevenueQueryValidate.js";
-import { refundPayment } from "../controllers/paymentController.js";
+} from "../middlewares/orderValidateMiddlewares/orderValidate.js";
+import { validateRevenueQuery } from "../middlewares/orderValidateMiddlewares/RevenueQueryValidate.js";
 
 const router = express.Router();
 
