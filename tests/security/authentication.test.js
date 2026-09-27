@@ -2,7 +2,6 @@ import request from "supertest";
 import app from "../../app.js";
 import { expect, it } from "vitest";
 import jwt from "jsonwebtoken";
-import mongoose from "mongoose";
 import User from "../../models/user.js";
 
 const uniqueEmail = () => `testuser_${Date.now()}@example.com`;
