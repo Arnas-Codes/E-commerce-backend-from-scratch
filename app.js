@@ -21,6 +21,13 @@ app.use(apiLimiter); // Add rate limiting middleware to all routes
 app.use(helmet()); // Add Helmet for security headers
 
 app.use((req, res, next) => {
+  const start = Date.now();
+  res.on("finish", () => {
+    const duration = Date.now() - start;
+    console.log(
+      `${req.method} ${req.originalUrl} ${res.statusCode} - ${duration}ms`,
+    );
+  });
   console.log(`${req.method} ${req.url}`);
   next();
 });
