@@ -3,12 +3,18 @@ dotenv.config();
 
 import app from "./app.js";
 import connectDB from "./config/db.js";
+import https from "https";
+import fs from "fs";
 
 connectDB();
 
+const options = {
+  key: fs.readFileSync("./cert/private-key.pem"),
+  cert: fs.readFileSync("./cert/certificate.pem"),
+};
+
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+https.createServer(options, app).listen(PORT, () => {
+  console.log(`HTTPS server is running on port ${PORT}`);
 });
-
