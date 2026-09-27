@@ -376,7 +376,7 @@ export const getBestSellingProducts = asyncHandler(async (req, res) => {
 });
 
 export const cancelOrder = asyncHandler(async (req, res) => {
-  const { orderId } = req.params;
+  const orderId = req.params.orderId;
   const userId = req.user._id;
   const { reason } = req.query;
   const inventoryMovements = [];
@@ -429,8 +429,8 @@ export const cancelOrder = asyncHandler(async (req, res) => {
         );
 
         inventoryMovements.push(movement);
-        await order.save({ session });
       }
+      await order.save({ session });
     });
 
     return res.status(200).json({
