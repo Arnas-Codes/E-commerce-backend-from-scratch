@@ -183,3 +183,88 @@ it("allows user to cancel their own order", async () => {
     .set("Authorization", `Bearer ${validToken}`);
   expect(response.status).toBe(200);
 });
+
+it("allows user to return their own order", async () => {
+  const user = await User.create({
+    name: "User",
+    email: uniqueEmail(),
+    password: "test-password",
+  });
+
+  const product = await Product.create({
+    name: "Test Product",
+    price: 10,
+    stock: 100,
+    category: "Test Category",
+  });
+
+  const order = await Order.create({
+    user: user._id,
+    items: [
+      {
+        product: product._id,
+        quantity: 1,
+        price: 10,
+        returnedQuantity: 0,
+      },
+    ],
+    totalPrice: 10,
+    status: "delivered",
+  });
+  const validToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+    expiresIn: "1h",
+  });
+
+  const response = await request(app)
+    .patch(`/orders/${order._id}/return`)
+    .set("Authorization", `Bearer ${validToken}`)
+    .send({
+      items: [
+        {
+          product: product._id,
+          quantity: 1,
+        },
+      ],
+    });
+  expect(response.status).toBe(200);
+});
+
+it("prevents user from modifying another user's order", async () => {
+  const userA = await User.create({
+    name: "User A",
+    email: uniqueEmail(),
+    password: "test-password",
+  });
+
+  const userB = await User.create({
+    name: "User B",
+    email: uniqueEmail(),
+    password: "test-password",
+  });
+
+  const order = await Order.create({
+    user: userB._id,
+    items: [
+      {
+        product: new mongoose.Types.ObjectId(),
+        quantity: 1,
+        price: 10,
+      },
+    ],
+    totalPrice: 10,
+    status: "delivered",
+  });
+
+  const validToken = jwt.sign({ userId: userA._id }, process.env.JWT_SECRET, {
+    expiresIn: "1h",
+  });
+
+  const response = await request(app)
+    .patch(`/orders/${order._id}/return`)
+    .set("Authorization", `Bearer ${validToken}`)
+    .send({
+      items: [{ product: new mongoose.Types.ObjectId(), quantity: 1 }],
+    });
+
+  expect(response.status).toBe(404);
+});
