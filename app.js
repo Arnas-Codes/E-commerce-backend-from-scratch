@@ -28,7 +28,6 @@ app.use((req, res, next) => {
       `${req.method} ${req.originalUrl} ${res.statusCode} - ${duration}ms`,
     );
   });
-  console.log(`${req.method} ${req.url}`);
   next();
 });
 
