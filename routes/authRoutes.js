@@ -12,6 +12,10 @@ const router = express.Router();
 
 router.post("/register", registerLimiter, validateRegister, register);
 
-router.post("/login", loginLimiter, validateLogin, login);
+if (process.env.NODE_ENV !== "test") {
+  router.post("/login", loginLimiter, validateLogin, login);
+} else {
+  router.post("/login", validateLogin, login);
+}
 
 export default router;

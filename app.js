@@ -17,7 +17,11 @@ const app = express();
 
 app.use(express.json());
 app.use(mongoSanitize()); // Add mongoSanitize middleware to prevent NoSQL injection attacks
-app.use(apiLimiter); // Add rate limiting middleware to all routes
+
+if (process.env.NODE_ENV !== "test") {
+  app.use(apiLimiter);
+} // Add rate limiting middleware to all routes
+console.log("APP NODE_ENV:", process.env.NODE_ENV);
 app.use(helmet()); // Add Helmet for security headers
 
 app.use((req, res, next) => {

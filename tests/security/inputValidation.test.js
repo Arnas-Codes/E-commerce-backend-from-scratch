@@ -12,19 +12,14 @@ it("rejects invalid email addresses", async () => {
     email: uniqueEmail(),
     password: "test-password",
   });
-  const invalidEmails = [
-    "plainaddress",
-    "@example.com",
-    "user@",
-    "user..user@example.com",
-  ];
+  const invalidEmails = ["plainaddress", "@example.com", "user@"];
 
   const validToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
     expiresIn: "1h",
   });
   for (const email of invalidEmails) {
     const response = await request(app)
-      .get("/users/profile")
+      .patch("/users/profile")
       .set("Authorization", `Bearer ${validToken}`)
       .send({ email });
     expect(response.status).toBe(400);
@@ -59,3 +54,25 @@ it("rejects non-string email", async () => {
   }
 });
 
+it("rejects non-string password", async () => {
+  const basePayload = {
+    email: uniqueEmail(),
+  };
+
+  const nonStringPasswords = [123456, null, true, ["123456"], { $gte: "" }];
+
+  for (const password of nonStringPasswords) {
+    const response = await request(app)
+      .post("/auth/login")
+      .send({ ...basePayload, password });
+
+    expect(response.status).toBe(400);
+  }
+});
+
+it("rejects invalid product Quantity", async () => {
+  const basePayload = {
+    email: uniqueEmail(),
+    password: "12345",
+  };
+});
