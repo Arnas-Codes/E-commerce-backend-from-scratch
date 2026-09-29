@@ -83,7 +83,7 @@ it("rejects invalid product quantity", async () => {
   const validToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
     expiresIn: "1h",
   });
-  const invalidQuantity = ["123456", null, true, ["123456"], { $gte: "" }];
+  const invalidQuantity = ["123456", null, true, ["123456"], { $gte: "" }, -1];
 
   for (const quantity of invalidQuantity) {
     const response = await request(app)
