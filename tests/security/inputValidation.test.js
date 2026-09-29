@@ -59,7 +59,7 @@ it("rejects non-string password", async () => {
     email: uniqueEmail(),
   };
 
-  const nonStringPasswords = [123456, null, true, ["123456"], { $gte: "" }];
+  const nonStringPasswords = [123456, null, true, ["123456"], { $gte: "" },undefined];
 
   for (const password of nonStringPasswords) {
     const response = await request(app)
@@ -93,3 +93,76 @@ it("rejects invalid product quantity", async () => {
     expect(response.status).toBe(400);
   }
 });
+
+it("rejects invalid price", async () => {
+  const user = await User.create({
+    name: "test",
+    email: uniqueEmail(),
+    password: "123456",
+    role: "admin",
+  });
+
+  const basePayload = {
+    name: "test",
+  };
+  const invalidPrice = ["123456", null, true, ["123456"], { $gte: "" }, -1];
+
+  const validToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+    expiresIn: "1h",
+  });
+
+  for (const price of invalidPrice) {
+    const response = await request(app)
+      .post("/products/")
+      .set("Authorization", `Bearer ${validToken}`)
+      .send({ ...basePayload, price: price });
+    expect(response.status).toBe(400);
+  }
+});
+
+it("rejects invalid pagination values", async () => {
+  const user = await User.create({
+    name: "test",
+    email: uniqueEmail(),
+    password: "123456",
+  });
+
+  const validToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+    expiresIn: "1h",
+  });
+
+  const invalidPages = [-1, 0, "abc", -10];
+
+  for (const page of invalidPages) {
+    const response = await request(app)
+      .get("/products/")
+      .set("Authorization", `Bearer ${validToken}`)
+      .query({ page });
+
+    expect(response.status).toBe(400);
+  }
+});
+
+it("rejects invalid sort values", async () => {
+  const user = await User.create({
+    name: "test",
+    email: uniqueEmail(),
+    password: "123456",
+  });
+
+  const validToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+expiresIn: "1h",
+  });
+
+  const invalidSorts = ["asc", "desc", "random", "abc", "123"];
+
+  for (const sort of invalidSorts) {
+    const response = await request(app)
+      .get("/products/")
+      .set("Authorization", `Bearer ${validToken}`)
+      .query({ sort });
+    
+    expect(response.status).toBe(400);
+  }
+});
+

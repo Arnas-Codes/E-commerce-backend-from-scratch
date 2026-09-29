@@ -6,6 +6,16 @@ export const validateProduct = (req, res, next) => {
       message: "Name and price are required",
     });
   }
+
+  if (typeof name !== "string" || name.length < 1) {
+    return res.status(400).json({
+      message: "Name must be a string",
+    });
+  }
+
+  if (typeof price !== "number") {
+    return res.status(400).json({ message: "Price must be a number" });
+  }
   next();
 };
 

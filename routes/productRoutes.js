@@ -20,13 +20,17 @@ import { getProductValidation } from "../middlewares/productValidateMiddlewares/
 
 const router = express.Router();
 
+// user/public routes
+
 router.get("/", getProductValidation, getProducts);
 
 router.get("/:id", getProductById);
 
-router.post("/", validateProduct, createProduct);
+// admin routes
 
-router.put("/:id", updateProduct);
+router.post("/",protect, authorizeAdmin,  validateProduct, createProduct);
+
+router.put("/:id", protect, authorizeAdmin, validateProduct, updateProduct);
 
 router.delete("/:id", protect, authorizeAdmin, deleteProduct);
 
