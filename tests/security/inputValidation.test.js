@@ -41,3 +41,21 @@ it("rejects password that is too short", async () => {
   const response = await request(app).post("/auth/register").send(payload);
   expect(response.status).toBe(400);
 });
+
+it("rejects non-string email", async () => {
+  const basePayload = {
+    name: "Test User",
+    password: "12345",
+  };
+
+  const nonStringEmail = [123, null, undefined, { $gte: "" }];
+
+  for (const email of nonStringEmail) {
+    const response = await request(app)
+      .post("/auth/register")
+      .send({ ...basePayload, email });
+
+    expect(response.status).toBe(400);
+  }
+});
+
