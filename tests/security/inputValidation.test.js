@@ -1,0 +1,43 @@
+import { it } from "vitest";
+import request from "supertest";
+import app from "../../app.js";
+import jwt from "jsonwebtoken";
+import User from "../../models/user.js";
+import { expect } from "vitest";
+
+const uniqueEmail = () => `testuser_${Date.now()}@example.com`;
+it("rejects invalid email addresses", async () => {
+  const user = await User.create({
+    name: "Test User",
+    email: uniqueEmail(),
+    password: "test-password",
+  });
+  const invalidEmails = [
+    "plainaddress",
+    "@example.com",
+    "user@",
+    "user..user@example.com",
+  ];
+
+  const validToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+    expiresIn: "1h",
+  });
+  for (const email of invalidEmails) {
+    const response = await request(app)
+      .get("/users/profile")
+      .set("Authorization", `Bearer ${validToken}`)
+      .send({ email });
+    expect(response.status).toBe(400);
+  }
+});
+
+it("rejects password that is too short", async () => {
+  const payload = {
+    name: "Test User",
+    email: uniqueEmail(),
+    password: "12345",
+  };
+
+  const response = await request(app).post("/auth/register").send(payload);
+  expect(response.status).toBe(400);
+});

@@ -1,19 +1,24 @@
 import User from "../models/user.js";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 import asyncHandler from "../utils/asyncHandler.js";
 
-export const getProfile = (req, res) => {
-  const { name, email, role } = req.user;
+export const getProfile = asyncHandler(async (req, res) => {
+  const profile = await User.findById(req.user._id)
+    .select("name email role")
+    .lean();
 
-  return res.status(200).json({
+  if (!profile) {
+    return res.status(404).json({ message: "User profile not found" });
+  }
+
+  return res.status(400).json({
     profile: {
-      name,
-      email,
-      role,
+      name: profile.name,
+      email: profile.email,
+      role: profile.role,
     },
   });
-};
+});
 
 export const updateProfile = asyncHandler(async (req, res) => {
   const { name, email } = req.body;
