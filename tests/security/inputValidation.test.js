@@ -70,9 +70,26 @@ it("rejects non-string password", async () => {
   }
 });
 
-it("rejects invalid product Quantity", async () => {
-  const basePayload = {
+it("rejects invalid product quantity", async () => {
+  const user = await User.create({
+    name: "test",
     email: uniqueEmail(),
-    password: "12345",
+    password: "123456",
+  });
+
+  const basePayload = {
+    productId: "123456",
   };
+  const validToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+    expiresIn: "1h",
+  });
+  const invalidQuantity = ["123456", null, true, ["123456"], { $gte: "" }];
+
+  for (const quantity of invalidQuantity) {
+    const response = await request(app)
+      .post("/cart/")
+      .set("Authorization", `Bearer ${validToken}`)
+      .send({ ...basePayload, quantity: quantity });
+    expect(response.status).toBe(400);
+  }
 });
