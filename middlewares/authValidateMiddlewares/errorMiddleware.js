@@ -1,5 +1,7 @@
 const errorHandler = (err, req, res, next) => {
-  console.log(err);
+  if (process.env.NODE_ENV !== "test") {
+    console.error(err);
+  }
 
   if (err.name === "ValidationError") {
     return res.status(400).json({ message: err.message });
