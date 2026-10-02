@@ -12,6 +12,7 @@ const testPerformance = asyncHandler(async () => {
 
   const result = await Product.find({
     category: "electronics",
+    price: { $gte: 100, $lte: 500 },
   }).explain("executionStats");
 
   console.log(result);

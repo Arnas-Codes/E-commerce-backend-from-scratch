@@ -6,7 +6,6 @@ const productSchema = new mongoose.Schema({
     required: true,
     trim: true,
     minlength: 1,
-    
   },
   price: {
     type: Number,
@@ -21,13 +20,15 @@ const productSchema = new mongoose.Schema({
   description: {
     type: String,
   },
-  stock:{
+  stock: {
     type: Number,
     required: true,
     min: 0,
     default: 0,
-  }
+  },
 });
 
+productSchema.index({ category: 1, price: 1 });
+
 const Product = mongoose.model("Product", productSchema);
-export default Product
+export default Product;
