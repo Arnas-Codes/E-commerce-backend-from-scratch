@@ -44,7 +44,7 @@ export const getProducts = asyncHandler(async (req, res) => {
   const products = await Product.find(filter)
     .sort(sort)
     .skip(skip)
-    .limit(limitNumber);
+    .limit(limitNumber).lean();
   return res.status(200).json({
     products,
     totalProducts,
