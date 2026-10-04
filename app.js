@@ -3,6 +3,7 @@ import mongoSanitize from "express-mongo-sanitize";
 import { apiLimiter } from "./middlewares/authValidateMiddlewares/rateLimit.js";
 import helmet from "helmet";
 import errorHandler from "./middlewares/authValidateMiddlewares/errorMiddleware.js";
+import compression from "compression";
 
 import productRoutes from "./routes/productRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -12,17 +13,11 @@ import orderRoutes from "./routes/ordersRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import InventoryMovementRoutes from "./routes/inventoryMovementRoutes.js";
 import inventoryRoutes from "./routes/inventoryRoutes.js";
-
 const app = express();
 
-app.use(express.json());
-app.use(mongoSanitize()); // Add mongoSanitize middleware to prevent NoSQL injection attacks
+app.use(helmet());
 
-if (process.env.NODE_ENV !== "test" || process.env.TEST_RATE_LIMIT === "true") {
-  app.use(apiLimiter);
-} // Add rate limiting middleware to all routes
-console.log("APP NODE_ENV:", process.env.NODE_ENV);
-app.use(helmet()); // Add Helmet for security headers
+app.use(compression());
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -34,6 +29,14 @@ app.use((req, res, next) => {
   });
   next();
 });
+
+if (process.env.NODE_ENV !== "test" || process.env.TEST_RATE_LIMIT === "true") {
+  app.use(apiLimiter);
+}
+console.log("APP NODE_ENV:", process.env.NODE_ENV);
+
+app.use(express.json());
+app.use(mongoSanitize());
 
 app.use("/products", productRoutes);
 app.use("/auth", authRoutes);
