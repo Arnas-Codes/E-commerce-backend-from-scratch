@@ -107,7 +107,7 @@ export const createOrder = asyncHandler(async (req, res) => {
 export const getMyOrders = asyncHandler(async (req, res) => {
   const userId = req.user._id;
 
-  const orders = await Order.find({ user: userId }).populate("items.product");
+  const orders = await Order.find({ user: userId }).populate("items.product","name price").lean();
 
   return res.status(200).json({ orders });
 });
@@ -118,7 +118,8 @@ export const getMyOrder = asyncHandler(async (req, res) => {
   const userId = req.user._id;
   const order = await Order.findOne({ _id: orderId, user: userId }).populate(
     "items.product",
-  );
+    "name price"
+  ).lean();
 
   if (!order) {
     return res.status(404).json({ message: "Order not found" });
@@ -159,7 +160,7 @@ export const getAllOrders = asyncHandler(async (req, res) => {
   const skip = (pageNumber - 1) * limitNumber;
   const orders = await Order.find(filter)
     .populate("user", "name email")
-    .populate("items.product")
+    .populate("items.product", "name price")
     .skip(skip)
     .limit(limitNumber);
 
