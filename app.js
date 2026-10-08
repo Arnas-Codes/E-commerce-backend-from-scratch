@@ -4,6 +4,7 @@ import { apiLimiter } from "./middlewares/authValidateMiddlewares/rateLimit.js";
 import helmet from "helmet";
 import errorHandler from "./middlewares/authValidateMiddlewares/errorMiddleware.js";
 import compression from "compression";
+import redisClient from "./config/redis.js";
 
 import productRoutes from "./routes/productRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -46,6 +47,18 @@ app.use("/orders", orderRoutes);
 app.use("/payment", paymentRoutes);
 app.use("/inventory-movements", InventoryMovementRoutes);
 app.use("/inventory", inventoryRoutes);
+
+
+// test route 
+app.get("/redis-test", async (req, res) => {
+  await redisClient.set("test:name", "Arnas");
+
+  const value = await redisClient.get("test:name");
+
+  res.json({
+    value,
+  });
+});
 
 app.use(errorHandler);
 

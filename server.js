@@ -6,7 +6,12 @@ import connectDB from "./config/db.js";
 import https from "https";
 import fs from "fs";
 
+import redisClient from "./config/redis.js";
+
 connectDB();
+
+await redisClient.connect();
+console.log("Redis connected");
 
 const options = {
   key: fs.readFileSync("./cert/private-key.pem"),
