@@ -107,7 +107,9 @@ export const createOrder = asyncHandler(async (req, res) => {
 export const getMyOrders = asyncHandler(async (req, res) => {
   const userId = req.user._id;
 
-  const orders = await Order.find({ user: userId }).populate("items.product","name price").lean();
+  const orders = await Order.find({ user: userId })
+    .populate("items.product", "name price")
+    .lean();
 
   return res.status(200).json({ orders });
 });
@@ -116,10 +118,9 @@ export const getMyOrders = asyncHandler(async (req, res) => {
 export const getMyOrder = asyncHandler(async (req, res) => {
   const { orderId } = req.params;
   const userId = req.user._id;
-  const order = await Order.findOne({ _id: orderId, user: userId }).populate(
-    "items.product",
-    "name price"
-  ).lean();
+  const order = await Order.findOne({ _id: orderId, user: userId })
+    .populate("items.product", "name price")
+    .lean();
 
   if (!order) {
     return res.status(404).json({ message: "Order not found" });

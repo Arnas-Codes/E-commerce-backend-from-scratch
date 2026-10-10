@@ -1,0 +1,14 @@
+
+config:
+  target: "https://localhost:3000"
+  tls:
+    rejectUnauthorized: false
+  phases:
+    - duration: 30
+      arrivalRate: 10
+
+scenarios:
+  - name: Get products
+    flow:
+      - get:
+          url: "/products"
