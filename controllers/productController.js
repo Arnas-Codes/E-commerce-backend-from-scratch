@@ -42,9 +42,11 @@ export const getProducts = asyncHandler(async (req, res) => {
 
   const skip = (pageNumber - 1) * limitNumber;
   const products = await Product.find(filter)
+    .select("name price category")
     .sort(sort)
     .skip(skip)
-    .limit(limitNumber).lean();
+    .limit(limitNumber)
+    .lean();
   return res.status(200).json({
     products,
     totalProducts,
@@ -62,7 +64,7 @@ export const getProductById = asyncHandler(async (req, res) => {
       message: "Invalid product ID",
     });
   }
-  const product = await Product.findById(id);
+  const product = await Product.findById(id).lean();
   if (!product) {
     return res.status(404).json({
       message: "Product not found",
@@ -79,7 +81,7 @@ export const createProduct = asyncHandler(async (req, res) => {
     price,
     category,
     description,
-    stock
+    stock,
   });
 
   res.status(201).json(newProduct);

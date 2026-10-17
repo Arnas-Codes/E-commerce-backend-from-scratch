@@ -1,0 +1,19 @@
+====================================================
+For Redis
+---
+$env:LOAD_TEST_MODE="true"
+npm run dev
+
+npx artillery run --output load-report-2.json load-test.yml
+---
+====================================================
+For processor info
+---
+Get-CimInstance Win32_Process -Filter "CommandLine LIKE '%server.js%'" | Select-Object ProcessId, CommandLine
+---
+---
+Get-Process -Id 19992 |
+  Select-Object Id, CPU,
+    @{Name="MemoryMB"; Expression={[math]::Round($_.WorkingSet64 / 1MB, 2)}}
+---
+===================================================
