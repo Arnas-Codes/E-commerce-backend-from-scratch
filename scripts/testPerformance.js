@@ -10,33 +10,15 @@ const testPerformance = asyncHandler(async () => {
 
   console.log("Connected to test database");
 
-  const filter = { category: "electronics" };
+  const result = await Product.find({
+    category: "electronics",
+  })
+    .select("name price category")
+    .sort({ price: 1 })
+    .limit(10)
+    .explain("executionStats");
 
-// Warm-up: run each query once
-await Product.find(filter).lean();
-await Product.find(filter).select("name price").lean();
-
-async function measure(label, queryFn) {
-  const runs = 5;
-  let total = 0;
-
-  for (let i = 0; i < runs; i++) {
-    const start = performance.now();
-    await queryFn();
-    total += performance.now() - start;
-  }
-
-  console.log(`${label}: ${(total / runs).toFixed(2)} ms average`);
-}
-
-await measure("Without select", () =>
-  Product.find(filter).lean()
-);
-
-await measure("With select", () =>
-  Product.find(filter).select("name price").lean()
-);
-
+  console.log(JSON.stringify(result.executionStats, null, 2));
   await mongoose.disconnect();
 });
 

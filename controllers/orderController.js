@@ -70,9 +70,22 @@ export const createOrder = asyncHandler(async (req, res) => {
       );
 
       for (const item of products) {
-        item.product.stock -= item.quantity;
+        const updatedProduct = await Product.findByIdAndUpdate(
+          {
+            _id: item.product._id,
+            stock: item.product.stock - item.quantity,
+          },
+          { $inc: { stock: -item.quantity } },
+          { new: true, session },
+        );
 
-        await item.product.save({ session });
+        if (!updatedProduct) {
+          const error = new Error(
+            `Not enough stock for product ${item.product.name}`,
+          );
+          error.statusCode = 400;
+          throw error;
+        }
 
         await InventoryMovement.create(
           [

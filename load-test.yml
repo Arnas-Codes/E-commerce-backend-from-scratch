@@ -4,8 +4,14 @@ config:
   tls:
     rejectUnauthorized: false
   phases:
-    - duration: 30
-      arrivalRate: 10
+  - duration: 30
+    arrivalRate: 10
+  - duration: 30
+    arrivalRate: 20
+  - duration: 30
+    arrivalRate: 30
+  - duration: 30
+    arrivalRate: 40
 
 scenarios:
   - name: Get products
