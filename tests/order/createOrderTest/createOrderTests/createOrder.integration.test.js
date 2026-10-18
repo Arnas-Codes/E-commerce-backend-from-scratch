@@ -196,7 +196,7 @@ describe("createOrder integration", () => {
     expect(next.mock.calls[0][0].message).toBe("Not enough stock");
     expect(next.mock.calls[0][0].statusCode).toBe(400);
   });
- 
+
   it("rolls back transaction when inventory movement fails", async () => {
     const user = await User.create({
       name: "Test User",
@@ -255,8 +255,99 @@ describe("createOrder integration", () => {
 
     const afterInventoryMovementCount = await InventoryMovement.countDocuments({
       product: product._id,
+      type: "sale",
     });
 
     expect(afterInventoryMovementCount).toBe(beforeInventoryMovementCount);
+  });
+
+  it("prevents overselling when two users order the last item concurrently", async () => {
+    const user1 = await User.create({
+      name: "User 1",
+      email: uniqueEmail(),
+      password: "password1",
+    });
+
+    const user2 = await User.create({
+      name: "User 2",
+      email: uniqueEmail(),
+      password: "password2",
+    });
+
+    const product = await Product.create({
+      name: "Limited Product",
+      price: 100,
+      category: "Limited",
+      stock: 1,
+    });
+
+    await Cart.create({
+      user: user1._id,
+      items: [
+        {
+          product: product._id,
+          quantity: 1,
+        },
+      ],
+    });
+
+    await Cart.create({
+      user: user2._id,
+      items: [
+        {
+          product: product._id,
+          quantity: 1,
+        },
+      ],
+    });
+
+    const attemptOrder = async (user) => {
+      const req = {
+        user: { _id: user._id },
+      };
+      const res = {
+        status: vi.fn().mockReturnThis(),
+        json: vi.fn(),
+      };
+      const next = vi.fn();
+      try {
+        await createOrder(req, res, next);
+      } catch (error) {
+        next(error);
+      }
+      return { res, next };
+    };
+
+    const results = await Promise.all([
+      attemptOrder(user1),
+      attemptOrder(user2),
+    ]);
+
+    const successfulOrders = results.filter(
+      (result) =>
+        result.res.status.mock.calls.length > 0 &&
+        result.res.status.mock.calls[0][0] === 201,
+    );
+
+    const failedOrders = results.filter(
+      (result) =>
+        result.next.mock.calls.length > 0 &&
+        result.next.mock.calls[0][0].message === "Not enough stock",
+    );
+
+    expect(await Order.countDocuments()).toBe(1);
+    expect(successfulOrders.length).toBe(1);
+    expect(failedOrders.length).toBe(1);
+    expect(failedOrders[0].next).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: "Not enough stock",
+        statusCode: 400,
+      }),
+    );
+
+    expect(await InventoryMovement.countDocuments({
+      product: product._id,
+      type: "sale",
+    })).toBe(1);
   });
 });
