@@ -70,19 +70,25 @@ export const createOrder = asyncHandler(async (req, res) => {
       );
 
       for (const item of products) {
-        const updatedProduct = await Product.findByIdAndUpdate(
+
+        const productId = item.product._id || item.product;
+        
+        const updatedProduct = await Product.findOneAndUpdate(
           {
             _id: item.product._id,
-            stock: item.product.stock - item.quantity,
+            stock: { $gte: item.quantity },
           },
-          { $inc: { stock: -item.quantity } },
-          { new: true, session },
+          {
+            $inc: { stock: -item.quantity },
+          },
+          {
+            new: true,
+            session,
+          },
         );
 
         if (!updatedProduct) {
-          const error = new Error(
-            `Not enough stock for product ${item.product.name}`,
-          );
+          const error = new Error("Not enough stock");
           error.statusCode = 400;
           throw error;
         }
