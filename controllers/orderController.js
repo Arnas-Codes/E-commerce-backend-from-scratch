@@ -70,9 +70,6 @@ export const createOrder = asyncHandler(async (req, res) => {
       );
 
       for (const item of products) {
-
-        const productId = item.product._id || item.product;
-        
         const updatedProduct = await Product.findOneAndUpdate(
           {
             _id: item.product._id,

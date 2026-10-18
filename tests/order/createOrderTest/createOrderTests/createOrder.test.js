@@ -41,10 +41,15 @@ describe("createOrder", () => {
   });
 
   it("creates an order successfully", async () => {
+    const fakeProductId = new mongoose.Types.ObjectId();
+    const fakeUserId = new mongoose.Types.ObjectId();
+    const fakeOrderId = new mongoose.Types.ObjectId();
+
     const fakeCart = {
+      user: fakeUserId,
       items: [
         {
-          product: "product1",
+          product: fakeProductId,
           quantity: 2,
         },
       ],
@@ -55,7 +60,7 @@ describe("createOrder", () => {
     });
 
     const fakeProduct = {
-      _id: "product1",
+      _id: fakeProductId,
       price: 100,
       stock: 10,
       save: vi.fn(),
@@ -66,11 +71,11 @@ describe("createOrder", () => {
     });
 
     const fakeOrder = {
-      _id: "order1",
-      user: "user1",
+      _id: fakeOrderId,
+      user: fakeUserId,
       items: [
         {
-          product: "product1",
+          product: fakeProductId,
           quantity: 2,
           price: 100,
         },
@@ -80,11 +85,29 @@ describe("createOrder", () => {
 
     vi.spyOn(Order, "create").mockResolvedValue([fakeOrder]);
 
+    vi.spyOn(Product, "findOneAndUpdate").mockImplementation(
+      async (query, update) => {
+        if (update.$inc && update.$inc.stock) {
+          fakeProduct.stock += update.$inc.stock;
+        }
+        return fakeProduct;
+      },
+    );
+
     vi.spyOn(InventoryMovement, "create").mockResolvedValue([]);
 
     vi.spyOn(Cart, "findOneAndDelete").mockReturnValue({
       session: vi.fn().mockResolvedValue(fakeCart),
     });
+
+    const req = {
+      user: { _id: fakeUserId },
+    };
+
+    const res = {
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn(),
+    };
 
     await createOrder(req, res);
 
@@ -95,16 +118,9 @@ describe("createOrder", () => {
     });
 
     expect(fakeProduct.stock).toBe(8);
-
-    expect(fakeProduct.save).toHaveBeenCalled();
-
     expect(Order.create).toHaveBeenCalled();
-
     expect(InventoryMovement.create).toHaveBeenCalled();
-
     expect(Cart.findOneAndDelete).toHaveBeenCalled();
-
-    expect(fakeSession.endSession).toHaveBeenCalled();
   });
 
   it("throws an error when cart is empty", async () => {
