@@ -4,10 +4,37 @@ import Product from "../models/product.js";
 import Order from "../models/order.js";
 import mongoose from "mongoose";
 import InventoryMovement from "../models/inventoryMovement.js";
+import IdempotencyKey from "../models/idempotencyKey.js";
 
 // create order
 export const createOrder = asyncHandler(async (req, res) => {
   const userId = req.user._id;
+
+  const idempotencyKey = req.get("idempotency-key");
+
+  if (
+    typeof idempotencyKey !== "string" ||
+    idempotencyKey.trim().length === 0 ||
+    idempotencyKey.length > 200
+  ) {
+    return res.status(400).json({ message: "Invalid idempotency key" });
+  }
+
+  const existingKey = await IdempotencyKey.findOne({
+    user: userId,
+    key: idempotencyKey,
+  });
+
+  if (existingKey?.order) {
+    const existingOrder = await Order.findById(existingKey.order);
+
+    if (existingOrder) {
+      return res.status(200).json({
+        message: "Order already created",
+        order: existingOrder,
+      });
+    }
+  }
 
   const session = await mongoose.startSession();
 
@@ -108,14 +135,42 @@ export const createOrder = asyncHandler(async (req, res) => {
       await Cart.findOneAndDelete({
         user: userId,
       }).session(session);
+
+      await IdempotencyKey.create(
+        [
+          {
+            user: userId,
+            key: idempotencyKey,
+            order: order._id,
+          },
+        ],
+        { session },
+      );
     });
 
     return res.status(201).json({
       message: "Order created successfully",
       order,
     });
+  } catch (error) {
+    if (error.code === 11000) {
+      const existingKey = await IdempotencyKey.findOne({
+        user: userId,
+        key: idempotencyKey,
+      });
+
+      if (existingKey?.order) {
+        const existingOrder = await Order.findById(existingKey.order);
+        return res.status(200).json({
+          message: "Order already created",
+          order: existingOrder,
+        });
+      }
+    }
+
+    throw error;
   } finally {
-    session.endSession();
+    await session.endSession();
   }
 });
 
