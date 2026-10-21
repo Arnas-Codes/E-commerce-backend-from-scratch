@@ -4,10 +4,22 @@ import User from "../../../../models/user";
 import Product from "../../../../models/product";
 import Order from "../../../../models/order";
 import Cart from "../../../../models/cart";
+import IdempotencyKey from "../../../../models/idempotencyKey";
 import { createOrder } from "../../../../controllers/orderController";
 
 const uniqueEmail = () =>
   `test_${Date.now()}_${Math.random().toString(36).substring(7)}@example.com`;
+
+const makeReq = (user, key) => ({
+  user: { _id: user._id },
+  get: (header) =>
+    header.toLowerCase() === "idempotency-key" ? key : undefined,
+});
+
+const makeRes = () => ({
+  status: vi.fn().mockReturnThis(),
+  json: vi.fn(),
+});
 
 describe("createOrder integration", () => {
   beforeEach(async () => {
@@ -15,6 +27,7 @@ describe("createOrder integration", () => {
     await Cart.deleteMany({});
     await Product.deleteMany({});
     await User.deleteMany({});
+    await IdempotencyKey.deleteMany({});
     await InventoryMovement.deleteMany({});
   });
 
@@ -34,54 +47,37 @@ describe("createOrder integration", () => {
 
     await Cart.create({
       user: user._id,
-      items: [
-        {
-          product: product._id,
-          quantity: 2,
-        },
-      ],
+      items: [{ product: product._id, quantity: 2 }],
     });
 
-    const req = {
-      user: { _id: user._id },
-    };
+    const res = makeRes();
+    const next = vi.fn();
 
-    const res = {
-      status: vi.fn().mockReturnThis(),
-      json: vi.fn(),
-    };
+    await createOrder(makeReq(user, "test-order-key"), res, next);
 
-    await createOrder(req, res);
-
-    const order = await Order.findOne({
-      user: user._id,
-    });
+    const order = await Order.findOne({ user: user._id });
 
     expect(order).not.toBeNull();
     expect(order.totalPrice).toBe(1000);
+    expect(order.items).toHaveLength(1);
+    expect(order.items[0].quantity).toBe(2);
+    expect(order.items[0].price).toBe(500);
+    expect(order.items[0].product.toString()).toBe(product._id.toString());
 
     expect(res.status).toHaveBeenCalledWith(201);
     expect(res.json.mock.calls[0][0].message).toBe(
       "Order created successfully",
     );
 
-    expect(order.items).toHaveLength(1);
-    expect(order.items[0].quantity).toBe(2);
-    expect(order.items[0].price).toBe(500);
-    expect(order.items[0].product.toString()).toBe(product._id.toString());
+    expect((await Product.findById(product._id)).stock).toBe(8);
 
-    const updatedProduct = await Product.findById(product._id);
-    expect(updatedProduct.stock).toBe(8);
-
-    const inventoryMovement = await InventoryMovement.findOne({
+    const movement = await InventoryMovement.findOne({
       product: product._id,
+      type: "sale",
     });
-    expect(inventoryMovement).not.toBeNull();
-    expect(inventoryMovement.change).toBe(-2);
-    expect(inventoryMovement.type).toBe("sale");
 
-    const cartAfterOrder = await Cart.findOne({ user: user._id });
-    expect(cartAfterOrder).toBeNull();
+    expect(movement.change).toBe(-2);
+    expect(await Cart.findOne({ user: user._id })).toBeNull();
   });
 
   it("returns 400 when cart is empty", async () => {
@@ -91,29 +87,18 @@ describe("createOrder integration", () => {
       password: "test-password",
     });
 
-    await Cart.create({
-      user: user._id,
-      items: [],
-    });
+    await Cart.create({ user: user._id, items: [] });
 
-    const req = {
-      user: { _id: user._id },
-    };
-
-    const res = {
-      status: vi.fn().mockReturnThis(),
-      json: vi.fn(),
-    };
     const next = vi.fn();
-    await createOrder(req, res, next);
+
+    await createOrder(makeReq(user, "test-order-key"), makeRes(), next);
 
     expect(next).toHaveBeenCalled();
-
     expect(next.mock.calls[0][0].message).toBe("Cart is empty");
     expect(next.mock.calls[0][0].statusCode).toBe(400);
   });
 
-  it("returns 404 when product not found", async () => {
+  it("returns 404 when product is not found", async () => {
     const user = await User.create({
       name: "Test User",
       email: uniqueEmail(),
@@ -126,36 +111,24 @@ describe("createOrder integration", () => {
       category: "Test",
       stock: 10,
     });
+
     await Product.findByIdAndDelete(product._id);
+
     await Cart.create({
       user: user._id,
-      items: [
-        {
-          product: product._id,
-          quantity: 20,
-        },
-      ],
+      items: [{ product: product._id, quantity: 20 }],
     });
 
-    const req = {
-      user: { _id: user._id },
-    };
-
-    const res = {
-      status: vi.fn().mockReturnThis(),
-      json: vi.fn(),
-    };
-
     const next = vi.fn();
-    await createOrder(req, res, next);
+
+    await createOrder(makeReq(user, "test-order-key"), makeRes(), next);
 
     expect(next).toHaveBeenCalled();
-
     expect(next.mock.calls[0][0].message).toBe("Product not found");
     expect(next.mock.calls[0][0].statusCode).toBe(404);
   });
 
-  it("returns 400 when not enough stock", async () => {
+  it("returns 400 when there is not enough stock", async () => {
     const user = await User.create({
       name: "Test User",
       email: uniqueEmail(),
@@ -171,33 +144,19 @@ describe("createOrder integration", () => {
 
     await Cart.create({
       user: user._id,
-      items: [
-        {
-          product: product._id,
-          quantity: 20,
-        },
-      ],
+      items: [{ product: product._id, quantity: 20 }],
     });
 
-    const req = {
-      user: { _id: user._id },
-    };
-
-    const res = {
-      status: vi.fn().mockReturnThis(),
-      json: vi.fn(),
-    };
-
     const next = vi.fn();
-    await createOrder(req, res, next);
+
+    await createOrder(makeReq(user, "test-order-key"), makeRes(), next);
 
     expect(next).toHaveBeenCalled();
-
     expect(next.mock.calls[0][0].message).toBe("Not enough stock");
     expect(next.mock.calls[0][0].statusCode).toBe(400);
   });
 
-  it("rolls back transaction when inventory movement fails", async () => {
+  it("rolls back the transaction when inventory movement fails", async () => {
     const user = await User.create({
       name: "Test User",
       email: uniqueEmail(),
@@ -210,55 +169,33 @@ describe("createOrder integration", () => {
       category: "Test",
       stock: 10,
     });
+
     await Cart.create({
       user: user._id,
-      items: [
-        {
-          product: product._id,
-          quantity: 2,
-        },
-      ],
+      items: [{ product: product._id, quantity: 2 }],
     });
 
-    const req = {
-      user: { _id: user._id },
-    };
-
-    const res = {
-      status: vi.fn().mockReturnThis(),
-      json: vi.fn(),
-    };
+    vi.spyOn(InventoryMovement, "create").mockRejectedValueOnce(
+      new Error("Inventory failure"),
+    );
 
     const next = vi.fn();
 
-    const beforeInventoryMovementCount = await InventoryMovement.countDocuments(
-      {
-        product: product._id,
-      },
-    );
-
-    const fakeError = new Error("Inventory failure");
-    vi.spyOn(InventoryMovement, "create").mockRejectedValueOnce(fakeError);
-    await createOrder(req, res, next);
+    await createOrder(makeReq(user, "test-order-key"), makeRes(), next);
 
     expect(next).toHaveBeenCalled();
     expect(next.mock.calls[0][0].message).toBe("Inventory failure");
 
-    const order = await Order.findOne({ user: user._id });
-    expect(order).toBeNull();
+    expect(await Order.findOne({ user: user._id })).toBeNull();
+    expect((await Product.findById(product._id)).stock).toBe(10);
+    expect(await Cart.findOne({ user: user._id })).not.toBeNull();
 
-    const updatedProduct = await Product.findById(product._id);
-    expect(updatedProduct.stock).toBe(10);
-
-    const updatedCart = await Cart.findOne({ user: user._id });
-    expect(updatedCart).not.toBeNull();
-
-    const afterInventoryMovementCount = await InventoryMovement.countDocuments({
-      product: product._id,
-      type: "sale",
-    });
-
-    expect(afterInventoryMovementCount).toBe(beforeInventoryMovementCount);
+    expect(
+      await InventoryMovement.countDocuments({
+        product: product._id,
+        type: "sale",
+      }),
+    ).toBe(0);
   });
 
   it("prevents overselling when two users order the last item concurrently", async () => {
@@ -283,71 +220,100 @@ describe("createOrder integration", () => {
 
     await Cart.create({
       user: user1._id,
-      items: [
-        {
-          product: product._id,
-          quantity: 1,
-        },
-      ],
+      items: [{ product: product._id, quantity: 1 }],
     });
 
     await Cart.create({
       user: user2._id,
-      items: [
-        {
-          product: product._id,
-          quantity: 1,
-        },
-      ],
+      items: [{ product: product._id, quantity: 1 }],
     });
 
-    const attemptOrder = async (user) => {
-      const req = {
-        user: { _id: user._id },
-      };
-      const res = {
-        status: vi.fn().mockReturnThis(),
-        json: vi.fn(),
-      };
-      const next = vi.fn();
-      try {
-        await createOrder(req, res, next);
-      } catch (error) {
-        next(error);
-      }
-      return { res, next };
-    };
+    const next1 = vi.fn();
+    const next2 = vi.fn();
+    const res1 = makeRes();
+    const res2 = makeRes();
 
-    const results = await Promise.all([
-      attemptOrder(user1),
-      attemptOrder(user2),
+    await Promise.all([
+      createOrder(makeReq(user1, "order-1"), res1, next1),
+      createOrder(makeReq(user2, "order-2"), res2, next2),
     ]);
 
+    const results = [
+      { res: res1, next: next1 },
+      { res: res2, next: next2 },
+    ];
+
     const successfulOrders = results.filter(
-      (result) =>
-        result.res.status.mock.calls.length > 0 &&
-        result.res.status.mock.calls[0][0] === 201,
+      ({ res }) => res.status.mock.calls[0]?.[0] === 201,
     );
 
     const failedOrders = results.filter(
-      (result) =>
-        result.next.mock.calls.length > 0 &&
-        result.next.mock.calls[0][0].message === "Not enough stock",
+      ({ next }) => next.mock.calls[0]?.[0]?.message === "Not enough stock",
     );
 
     expect(await Order.countDocuments()).toBe(1);
-    expect(successfulOrders.length).toBe(1);
-    expect(failedOrders.length).toBe(1);
-    expect(failedOrders[0].next).toHaveBeenCalledWith(
-      expect.objectContaining({
-        message: "Not enough stock",
-        statusCode: 400,
-      }),
-    );
+    expect(successfulOrders).toHaveLength(1);
+    expect(failedOrders).toHaveLength(1);
 
-    expect(await InventoryMovement.countDocuments({
-      product: product._id,
-      type: "sale",
-    })).toBe(1);
+    expect(failedOrders[0].next.mock.calls[0][0].statusCode).toBe(400);
+
+    expect(
+      await InventoryMovement.countDocuments({
+        product: product._id,
+        type: "sale",
+      }),
+    ).toBe(1);
+  });
+
+  it("returns the existing order when the same idempotency key is reused", async () => {
+    const user = await User.create({
+      name: "Test User",
+      email: uniqueEmail(),
+      password: "test-password",
+    });
+
+    const product = await Product.create({
+      name: "Test Product",
+      price: 500,
+      category: "Test",
+      stock: 10,
+    });
+
+    await Cart.create({
+      user: user._id,
+      items: [{ product: product._id, quantity: 2 }],
+    });
+
+    const key = "test-order-key";
+    const firstRes = makeRes();
+    const secondRes = makeRes();
+    const next = vi.fn();
+
+    await createOrder(makeReq(user, key), firstRes, next);
+    await createOrder(makeReq(user, key), secondRes, next);
+
+    expect(firstRes.status).toHaveBeenCalledWith(201);
+    expect(secondRes.status).toHaveBeenCalledWith(200);
+
+    const firstOrder = firstRes.json.mock.calls[0][0].order;
+    const secondOrder = secondRes.json.mock.calls[0][0].order;
+
+    expect(secondOrder._id.toString()).toBe(firstOrder._id.toString());
+    expect(await Order.countDocuments({ user: user._id })).toBe(1);
+    expect((await Product.findById(product._id)).stock).toBe(8);
+
+    expect(
+      await InventoryMovement.countDocuments({
+        product: product._id,
+        type: "sale",
+      }),
+    ).toBe(1);
+
+    expect(
+      await IdempotencyKey.countDocuments({
+        user: user._id,
+        key,
+      }),
+    ).toBe(1);
   });
 });
