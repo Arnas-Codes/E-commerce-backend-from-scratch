@@ -153,7 +153,6 @@ export const createOrder = asyncHandler(async (req, res) => {
       order,
     });
   } catch (error) {
-    if (error.code === 11000) {
       const existingKey = await IdempotencyKey.findOne({
         user: userId,
         key: idempotencyKey,
@@ -166,8 +165,7 @@ export const createOrder = asyncHandler(async (req, res) => {
           order: existingOrder,
         });
       }
-    }
-
+      
     throw error;
   } finally {
     await session.endSession();

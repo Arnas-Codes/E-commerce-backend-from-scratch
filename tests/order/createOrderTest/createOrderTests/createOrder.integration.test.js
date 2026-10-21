@@ -326,7 +326,7 @@ describe("createOrder integration", () => {
     "rejects when the idempotency key is %s",
     async (idempotencyKey, idempotencyKeyValue) => {
       const user = await User.create({
-        name: "Test User", 
+        name: "Test User",
         email: uniqueEmail(),
         password: "test-password",
       });
@@ -341,4 +341,50 @@ describe("createOrder integration", () => {
       });
     },
   );
+
+  it.only("returns same order for concurrent requests with same idempotency key", async () => {
+    const user = await User.create({
+      name: "Test User",
+      email: uniqueEmail(),
+      password: "test-password",
+    });
+
+    const product = await Product.create({
+      name: "Test Product",
+      price: 500,
+      category: "Test",
+      stock: 10,
+    });
+
+    await Cart.create({
+      user: user._id,
+      items: [{ product: product._id, quantity: 2 }],
+    });
+
+    const key = "concurrent-order-key";
+
+    const next1 = vi.fn();
+    const next2 = vi.fn();
+    const res1 = makeRes();
+    const res2 = makeRes();
+
+    await Promise.allSettled([
+      createOrder(makeReq(user, key), res1, next1),
+      createOrder(makeReq(user, key), res2, next2),
+    ]);
+
+    const firstOrder = res1.json.mock.calls[0][0].order;
+    const secondOrder = res2.json.mock.calls[0][0].order;
+
+    expect(secondOrder._id.toString()).toBe(firstOrder._id.toString());
+    expect(await Order.countDocuments({ user: user._id })).toBe(1);
+    expect((await Product.findById(product._id)).stock).toBe(8);
+
+    expect(
+      await InventoryMovement.countDocuments({
+        product: product._id,
+        type: "sale",
+      }),
+    ).toBe(1);
+  });
 });
