@@ -316,4 +316,29 @@ describe("createOrder integration", () => {
       }),
     ).toBe(1);
   });
+
+  it.each([
+    ["empty string", ""],
+    ["null", null],
+    ["undefined", undefined],
+    ["long string", "a".repeat(256)],
+  ])(
+    "rejects when the idempotency key is %s",
+    async (idempotencyKey, idempotencyKeyValue) => {
+      const user = await User.create({
+        name: "Test User", 
+        email: uniqueEmail(),
+        password: "test-password",
+      });
+
+      const res = makeRes();
+
+      await createOrder(makeReq(user, idempotencyKeyValue), res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        message: "Invalid idempotency key",
+      });
+    },
+  );
 });
