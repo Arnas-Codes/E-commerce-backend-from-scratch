@@ -459,4 +459,44 @@ describe("createOrder integration", () => {
       }),
     ).toBe(1);
   });
+
+  it.only("rolls back when idempotency key fails to save", async () => {
+    const user = await User.create({
+      name: "Test User",
+      email: uniqueEmail(),
+      password: "test-password",
+    });
+
+    const product = await Product.create({
+      name: "Test Product",
+      price: 500,
+      category: "Test",
+      stock: 10,
+    });
+
+    await Cart.create({
+      user: user._id,
+      items: [{ product: product._id, quantity: 2 }],
+    });
+
+    const idempotencySpy = vi
+      .spyOn(IdempotencyKey, "create")
+      .mockRejectedValueOnce(new Error("Idempotency save failed"));
+
+    const next = vi.fn();
+    const res = makeRes();
+    const req = makeReq(user, "test-order-key");
+
+    await createOrder(req, res, next);
+
+    expect(await Order.countDocuments({ user: user._id })).toBe(0);
+    expect((await Product.findById(product._id)).stock).toBe(10);
+    expect(await Cart.findOne({ user: user._id })).not.toBeNull();
+    expect(
+      await InventoryMovement.countDocuments({
+        product: product._id,
+        type: "sale",
+      }),
+    ).toBe(0);
+  });
 });
