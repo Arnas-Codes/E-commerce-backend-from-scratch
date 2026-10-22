@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, vi, it } from "vitest";
+import { beforeEach, describe, expect, vi, it, afterEach } from "vitest";
 import InventoryMovement from "../../../../models/inventoryMovement";
 import User from "../../../../models/user";
 import Product from "../../../../models/product";
@@ -29,6 +29,10 @@ describe("createOrder integration", () => {
     await User.deleteMany({});
     await IdempotencyKey.deleteMany({});
     await InventoryMovement.deleteMany({});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it("creates an order successfully", async () => {
@@ -342,7 +346,7 @@ describe("createOrder integration", () => {
     },
   );
 
-  it.only("returns same order for concurrent requests with same idempotency key", async () => {
+  it("returns same order for concurrent requests with same idempotency key", async () => {
     const user = await User.create({
       name: "Test User",
       email: uniqueEmail(),
@@ -373,11 +377,79 @@ describe("createOrder integration", () => {
       createOrder(makeReq(user, key), res2, next2),
     ]);
 
+    const successfulResponses = [res1, res2].filter(
+      (res) =>
+        res.status.mock.calls[0]?.[0] === 201 ||
+        res.status.mock.calls[0]?.[0] === 200,
+    );
+
+    const failedResponses = [res1, res2].filter(
+      (res) => res.status.mock.calls[0]?.[0] === 400,
+    );
+
+    expect(successfulResponses).toHaveLength(2);
+    expect(failedResponses).toHaveLength(0);
+
     const firstOrder = res1.json.mock.calls[0][0].order;
     const secondOrder = res2.json.mock.calls[0][0].order;
 
     expect(secondOrder._id.toString()).toBe(firstOrder._id.toString());
     expect(await Order.countDocuments({ user: user._id })).toBe(1);
+    expect((await Product.findById(product._id)).stock).toBe(8);
+
+    expect(
+      await InventoryMovement.countDocuments({
+        product: product._id,
+        type: "sale",
+      }),
+    ).toBe(1);
+  });
+
+  it("rejects concurrent requests with different idempotency keys for the same user", async () => {
+    const user = await User.create({
+      name: "Test User",
+      email: uniqueEmail(),
+      password: "test-password",
+    });
+
+    const product = await Product.create({
+      name: "Test Product",
+      price: 500,
+      category: "Test",
+      stock: 10,
+    });
+
+    await Cart.create({
+      user: user._id,
+      items: [{ product: product._id, quantity: 2 }],
+    });
+
+    const next1 = vi.fn();
+    const next2 = vi.fn();
+
+    const res1 = makeRes();
+    const res2 = makeRes();
+
+    await Promise.all([
+      createOrder(makeReq(user, "order-key-1"), res1, next1),
+      createOrder(makeReq(user, "order-key-2"), res2, next2),
+    ]);
+
+    const successfulResponses = [res1, res2].filter(
+      (res) => res.status.mock.calls[0]?.[0] === 201,
+    );
+
+    const failedResponses = [next1, next2].filter(
+      (next) => next.mock.calls.length > 0,
+    );
+
+    expect(successfulResponses).toHaveLength(1);
+    expect(failedResponses).toHaveLength(1);
+
+    expect(await Order.countDocuments({ user: user._id })).toBe(1);
+
+    expect(await IdempotencyKey.countDocuments({ user: user._id })).toBe(1);
+
     expect((await Product.findById(product._id)).stock).toBe(8);
 
     expect(
