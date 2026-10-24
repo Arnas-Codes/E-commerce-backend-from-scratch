@@ -22,7 +22,7 @@ export const createOrder = asyncHandler(async (req, res) => {
 
   const existingKey = await IdempotencyKey.findOne({
     user: userId,
-    key: idempotencyKey,
+    key: idempotencyKey.trim(),
   });
 
   if (existingKey?.order) {
@@ -140,7 +140,7 @@ export const createOrder = asyncHandler(async (req, res) => {
         [
           {
             user: userId,
-            key: idempotencyKey,
+            key: idempotencyKey.trim(),
             order: order._id,
           },
         ],
@@ -153,19 +153,22 @@ export const createOrder = asyncHandler(async (req, res) => {
       order,
     });
   } catch (error) {
-      const existingKey = await IdempotencyKey.findOne({
-        user: userId,
-        key: idempotencyKey,
-      });
+    const existingKey = await IdempotencyKey.findOne({
+      user: userId,
+      key: idempotencyKey,
+    });
 
-      if (existingKey?.order) {
-        const existingOrder = await Order.findById(existingKey.order);
+    if (existingKey?.order) {
+      const existingOrder = await Order.findById(existingKey.order);
+
+      if (existingOrder) {
         return res.status(200).json({
           message: "Order already created",
           order: existingOrder,
         });
       }
-      
+    }
+
     throw error;
   } finally {
     await session.endSession();
