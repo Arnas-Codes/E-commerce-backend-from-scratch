@@ -17,6 +17,9 @@ import orderRoutes from "./routes/ordersRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import InventoryMovementRoutes from "./routes/inventoryMovementRoutes.js";
 import inventoryRoutes from "./routes/inventoryRoutes.js";
+
+import upload from "./middlewares/upload/uploadMiddleware.js";
+
 const app = express();
 
 app.use(helmet());
@@ -67,6 +70,20 @@ app.get("/redis-test", async (req, res) => {
   });
 });
 
+app.post("/test-upload", upload.single("image"), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({
+      message: "No image uploaded",
+    });
+  }
+
+  res.status(200).json({
+    message: "Image uploaded successfully",
+    file: req.file,
+  });
+});
+
 app.use(errorHandler);
 
 export default app;
+ 
