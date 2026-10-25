@@ -3,6 +3,9 @@ import Product from "../models/product.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import InventoryMovement from "../models/inventoryMovement.js";
 
+import fs from "fs/promises";
+import path from "path";
+
 // Getting Product
 export const getProducts = asyncHandler(async (req, res) => {
   const {
@@ -74,17 +77,33 @@ export const getProductById = asyncHandler(async (req, res) => {
   res.status(200).json(product);
 });
 
+
+// creating Product
 export const createProduct = asyncHandler(async (req, res) => {
   const { name, price, category, description, stock } = req.body;
-  const newProduct = await Product.create({
-    name,
-    price,
-    category,
-    description,
-    stock,
-  });
 
-  res.status(201).json(newProduct);
+  const image = req.file ? `/uploads/${req.file.filename}` : "";
+
+  try {
+    const newProduct = await Product.create({
+      name,
+      price,
+      category,
+      description,
+      stock,
+      image,
+    });
+
+    res.status(201).json(newProduct);
+  } catch (error) {
+    if (req.file) {
+      await fs.unlink(path.resolve(req.file.path)).catch((cleanupError) => {
+        console.error("Failed to delete uploaded image:", cleanupError);
+      });
+    }
+  }
+
+  throw error;
 });
 
 // Updating product

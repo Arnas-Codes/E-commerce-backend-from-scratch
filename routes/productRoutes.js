@@ -18,6 +18,8 @@ import { adminOnly, protect } from "../middlewares/authValidateMiddlewares/authM
 import { authorizeAdmin } from "../middlewares/authValidateMiddlewares/authorizeAdmin.js";
 import { getProductValidation } from "../middlewares/productValidateMiddlewares/validateGetProduct.js";
 
+import upload from "../middlewares/upload/uploadMiddleware.js";
+
 const router = express.Router();
 
 // user/public routes
@@ -28,7 +30,7 @@ router.get("/:id", getProductById);
 
 // admin routes
 
-router.post("/",protect, authorizeAdmin,  validateProduct, createProduct);
+router.post("/",protect, authorizeAdmin, upload.single("image"),  validateProduct, createProduct);
 
 router.put("/:id", protect, authorizeAdmin, validateProduct, updateProduct);
 
@@ -43,7 +45,7 @@ router.patch(
 );
 
 router.patch(
-  "/productId/stock/adjust",
+  "/:productId/stock/adjust",
   protect,
   adminOnly,
   validateStockAdjustment,

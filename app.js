@@ -19,6 +19,7 @@ import InventoryMovementRoutes from "./routes/inventoryMovementRoutes.js";
 import inventoryRoutes from "./routes/inventoryRoutes.js";
 
 import upload from "./middlewares/upload/uploadMiddleware.js";
+import uploadErrorMiddleware from "./middlewares/upload/uploadErrorMiddleware.js";
 
 const app = express();
 
@@ -70,10 +71,15 @@ app.get("/redis-test", async (req, res) => {
   });
 });
 
+
+// test route for file upload
+app.use("/uploads", express.static("uploads"));
+
 app.post("/test-upload", upload.single("image"), (req, res) => {
   if (!req.file) {
     return res.status(400).json({
       message: "No image uploaded",
+      file: req.file,
     });
   }
 
@@ -83,6 +89,7 @@ app.post("/test-upload", upload.single("image"), (req, res) => {
   });
 });
 
+app.use(uploadErrorMiddleware);
 app.use(errorHandler);
 
 export default app;
