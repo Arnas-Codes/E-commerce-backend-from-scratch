@@ -32,7 +32,7 @@ router.get("/:id", getProductById);
 
 router.post("/",protect, authorizeAdmin, upload.single("image"),  validateProduct, createProduct);
 
-router.put("/:id", protect, authorizeAdmin, validateProduct, updateProduct);
+router.put("/:id", protect, authorizeAdmin, upload.single("image"), validateProduct, updateProduct);
 
 router.delete("/:id", protect, authorizeAdmin, deleteProduct);
 

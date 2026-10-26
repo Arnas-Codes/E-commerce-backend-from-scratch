@@ -77,7 +77,6 @@ export const getProductById = asyncHandler(async (req, res) => {
   res.status(200).json(product);
 });
 
-
 // creating Product
 export const createProduct = asyncHandler(async (req, res) => {
   const { name, price, category, description, stock } = req.body;
@@ -111,24 +110,61 @@ export const updateProduct = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { name, price, category, description, stock } = req.body;
 
+  // 1. Validate ID format
   if (!mongoose.Types.ObjectId.isValid(id)) {
+    if (req.file) {
+      await fs.unlink(path.resolve(req.file.path)).catch(() => {});
+    }
     return res.status(400).json({
       message: "Invalid product ID",
     });
   }
 
-  const updatedProduct = await Product.findByIdAndUpdate(
-    id,
-    { name, price, category, description, stock },
-    { new: true },
-  );
+  // 2. Find product
+  const product = await Product.findById(id);
 
-  if (!updatedProduct) {
+  if (!product) {
+    if (req.file) {
+      await fs.unlink(path.resolve(req.file.path)).catch(() => {});
+    }
     return res.status(404).json({
       message: "Product not found",
     });
   }
-  res.status(200).json(updatedProduct);
+
+  const oldImagePath = product.image;
+
+  try {
+    product.name = name ?? product.name;
+    product.price = price ?? product.price;
+    product.category = category ?? product.category;
+    product.description = description ?? product.description;
+    product.stock = stock ?? product.stock;
+
+    if (req.file) {
+      product.image = `/uploads/${req.file.filename}`;
+    }
+
+    const updatedProduct = await product.save();
+
+    if (req.file && oldImagePath) {
+      const oldFilename = path.basename(oldImagePath);
+      const oldFilePath = path.resolve("uploads", oldFilename);
+      await fs.unlink(oldFilePath).catch((error) => {
+        console.error("Failed to delete old image:", error);
+      });
+    }
+
+    return res.status(200).json(updatedProduct);
+  } catch (error) {
+    if (req.file) {
+      await fs.unlink(path.resolve(req.file.path)).catch((cleanupError) => {
+        console.error("Failed to delete uploaded image:", cleanupError);
+      });
+    }
+
+    throw error;
+  }
 });
 
 // Deleting Product

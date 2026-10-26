@@ -1,21 +1,41 @@
-export const validateProduct = (req, res, next) => {
+import fs from "fs/promises";
+import path from "path";
+
+export const validateProduct = async (req, res, next) => {
+  const reject = async (message) => {
+    if (req.file) {
+      await fs.unlink(path.resolve(req.file.path)).catch((error) => {
+        console.err;
+        or("Failed to clean up uploaded image:", error);
+      });
+    }
+
+    return res.status(400).json({ message });
+  };
+
   const { name, price } = req.body;
+  const isCreate = req.method === "POST";
 
-  if (!name || price === undefined) {
-    return res.status(400).json({
-      message: "Name and price are required",
-    });
+  if (isCreate && (name === undefined || price === undefined)) {
+    return reject("Name and price are required");
   }
 
-  if (typeof name !== "string" || name.length < 1) {
-    return res.status(400).json({
-      message: "Name must be a string",
-    });
+  if (name !== undefined) {
+    if (typeof name !== "string" || name.trim().length < 1) {
+      return reject("Name must be a non-empty string");
+    }
+
+    req.body.name = name.trim();
   }
 
-  if (typeof price !== "number") {
-    return res.status(400).json({ message: "Price must be a number" });
+  if (price !== undefined) {
+    if (price === "" || !Number.isFinite(Number(price)) || Number(price) < 0) {
+      return reject("Price must be a valid non-negative number");
+    }
+
+    req.body.price = Number(price);
   }
+
   next();
 };
 
