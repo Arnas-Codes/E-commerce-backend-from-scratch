@@ -177,12 +177,22 @@ export const deleteProduct = asyncHandler(async (req, res) => {
     });
   }
 
-  const deletedProduct = await Product.findByIdAndDelete(id);
-  if (!deletedProduct) {
+  const product = await Product.findById(id);
+  if (!product) {
     return res.status(404).json({
       message: "Product not found",
     });
   }
+
+  await Product.findByIdAndDelete(id);
+
+  if (product.image) {
+    const imagePath = path.resolve("uploads", path.basename(product.image));
+    await fs.unlink(imagePath).catch((error) => {
+      console.error("Failed to delete image:", error);
+    });
+  }
+
   res.status(200).json({
     message: "Product deleted successfully",
   });
