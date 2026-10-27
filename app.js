@@ -18,7 +18,7 @@ import paymentRoutes from "./routes/paymentRoutes.js";
 import InventoryMovementRoutes from "./routes/inventoryMovementRoutes.js";
 import inventoryRoutes from "./routes/inventoryRoutes.js";
 
-import upload from "./middlewares/upload/uploadMiddleware.js";
+import upload from "./middlewares/upload/cloudUpload/uploadMiddleware.js";
 import uploadErrorMiddleware from "./middlewares/upload/uploadErrorMiddleware.js";
 
 const app = express();

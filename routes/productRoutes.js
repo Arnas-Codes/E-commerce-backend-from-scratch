@@ -18,7 +18,7 @@ import { adminOnly, protect } from "../middlewares/authValidateMiddlewares/authM
 import { authorizeAdmin } from "../middlewares/authValidateMiddlewares/authorizeAdmin.js";
 import { getProductValidation } from "../middlewares/productValidateMiddlewares/validateGetProduct.js";
 
-import upload from "../middlewares/upload/uploadMiddleware.js";
+import upload from "../middlewares/upload/cloudUpload/uploadMiddleware.js";
 
 const router = express.Router();
 
@@ -30,7 +30,7 @@ router.get("/:id", getProductById);
 
 // admin routes
 
-router.post("/",protect, authorizeAdmin, upload.single("image"),  validateProduct, createProduct);
+router.post("/",upload.single("image"),  validateProduct, createProduct);
 
 router.put("/:id", protect, authorizeAdmin, upload.single("image"), validateProduct, updateProduct);
 

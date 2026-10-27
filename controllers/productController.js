@@ -81,8 +81,12 @@ export const getProductById = asyncHandler(async (req, res) => {
 export const createProduct = asyncHandler(async (req, res) => {
   const { name, price, category, description, stock } = req.body;
 
-  const image = req.file ? `/uploads/${req.file.filename}` : "";
+  // for local storage, 
+  // const image = req.file ? `/uploads/${req.file.filename}` : "";
 
+  // for cloudinary storage
+  const image = req.file ? req.file.path : "";
+  
   try {
     const newProduct = await Product.create({
       name,
@@ -100,9 +104,9 @@ export const createProduct = asyncHandler(async (req, res) => {
         console.error("Failed to delete uploaded image:", cleanupError);
       });
     }
-  }
 
-  throw error;
+    throw error;
+  }
 });
 
 // Updating product
