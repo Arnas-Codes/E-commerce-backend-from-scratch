@@ -3,8 +3,14 @@ import Product from "../models/product.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import InventoryMovement from "../models/inventoryMovement.js";
 
+import cloudinary from "cloudinary";
 import fs from "fs/promises";
 import path from "path";
+
+const extractPublicIdFromUrl = (url) => {
+  const match = url.match(/\/upload\/(?:v\d+\/)?(.+?)\.[^.]+$/);
+  return match ? match[1] : url;
+};
 
 // Getting Product
 export const getProducts = asyncHandler(async (req, res) => {
@@ -45,7 +51,7 @@ export const getProducts = asyncHandler(async (req, res) => {
 
   const skip = (pageNumber - 1) * limitNumber;
   const products = await Product.find(filter)
-    .select("name price category")
+    .select("name price category image")
     .sort(sort)
     .skip(skip)
     .limit(limitNumber)
@@ -81,12 +87,12 @@ export const getProductById = asyncHandler(async (req, res) => {
 export const createProduct = asyncHandler(async (req, res) => {
   const { name, price, category, description, stock } = req.body;
 
-  // for local storage, 
-  // const image = req.file ? `/uploads/${req.file.filename}` : "";
+  // for local storage,
+  /* const image = req.file ? `/uploads/${req.file.filename}` : ""; */
 
   // for cloudinary storage
   const image = req.file ? req.file.path : "";
-  
+
   try {
     const newProduct = await Product.create({
       name,
@@ -100,8 +106,18 @@ export const createProduct = asyncHandler(async (req, res) => {
     res.status(201).json(newProduct);
   } catch (error) {
     if (req.file) {
-      await fs.unlink(path.resolve(req.file.path)).catch((cleanupError) => {
+      // for local storage
+      /*  await fs.unlink(path.resolve(req.file.path)).catch((cleanupError) => {
         console.error("Failed to delete uploaded image:", cleanupError);
+      }); */
+
+      // for cloudinary storage
+      const publicId = req.file.filename;
+      await cloudinary.uploader.destroy(publicId).catch((cleanupError) => {
+        console.error(
+          "Failed to delete uploaded image from Cloudinary:",
+          cleanupError,
+        );
       });
     }
 
@@ -117,7 +133,12 @@ export const updateProduct = asyncHandler(async (req, res) => {
   // 1. Validate ID format
   if (!mongoose.Types.ObjectId.isValid(id)) {
     if (req.file) {
-      await fs.unlink(path.resolve(req.file.path)).catch(() => {});
+      // for local storage
+      /* await fs.unlink(path.resolve(req.file.path)).catch(() => {}); */
+
+      // for cloudinary storage (multer-storage-cloudinary usually puts public_id in filename or uses path)
+      const publicId = req.file.filename;
+      await cloudinary.uploader.destroy(publicId).catch(() => {});
     }
     return res.status(400).json({
       message: "Invalid product ID",
@@ -129,7 +150,12 @@ export const updateProduct = asyncHandler(async (req, res) => {
 
   if (!product) {
     if (req.file) {
-      await fs.unlink(path.resolve(req.file.path)).catch(() => {});
+      // for local storage
+      /* await fs.unlink(path.resolve(req.file.path)).catch(() => {}); */
+
+      // for cloudinary storage
+      const publicId = req.file.filename;
+      await cloudinary.uploader.destroy(publicId).catch(() => {});
     }
     return res.status(404).json({
       message: "Product not found",
@@ -146,24 +172,43 @@ export const updateProduct = asyncHandler(async (req, res) => {
     product.stock = stock ?? product.stock;
 
     if (req.file) {
-      product.image = `/uploads/${req.file.filename}`;
+      // for local storage
+      /* product.image = `/uploads/${req.file.filename}`; */
+
+      // for cloudinary storage (req.file.path contains the secure URL)
+      product.image = req.file.path;
     }
 
     const updatedProduct = await product.save();
 
     if (req.file && oldImagePath) {
-      const oldFilename = path.basename(oldImagePath);
+      // for local storage cleanup...
+      /* const oldFilename = path.basename(oldImagePath);
       const oldFilePath = path.resolve("uploads", oldFilename);
       await fs.unlink(oldFilePath).catch((error) => {
         console.error("Failed to delete old image:", error);
+      }); */
+
+      // for cloudinary storage
+      const oldPublicId = extractPublicIdFromUrl(oldImagePath);
+      await cloudinary.uploader.destroy(oldPublicId).catch((error) => {
+        console.error("Failed to delete old image from Cloudinary:", error);
       });
     }
 
     return res.status(200).json(updatedProduct);
   } catch (error) {
     if (req.file) {
-      await fs.unlink(path.resolve(req.file.path)).catch((cleanupError) => {
-        console.error("Failed to delete uploaded image:", cleanupError);
+      // for local storage cleanup...
+      /* await fs.unlink(path.resolve(req.file.path)).catch(() => {}); */
+
+      // for cloudinary storage
+      const publicId = req.file.filename;
+      await cloudinary.uploader.destroy(publicId).catch((cleanupError) => {
+        console.error(
+          "Failed to delete uploaded image from Cloudinary:",
+          cleanupError,
+        );
       });
     }
 
@@ -191,9 +236,16 @@ export const deleteProduct = asyncHandler(async (req, res) => {
   await Product.findByIdAndDelete(id);
 
   if (product.image) {
-    const imagePath = path.resolve("uploads", path.basename(product.image));
+    // for local storage
+    /* const imagePath = path.resolve("uploads", path.basename(product.image));
     await fs.unlink(imagePath).catch((error) => {
       console.error("Failed to delete image:", error);
+    }); */
+
+    // for cloudinary storage
+    const oldPublicId = extractPublicIdFromUrl(product.image);
+    await cloudinary.uploader.destroy(oldPublicId).catch((error) => {
+      console.error("Failed to delete image from Cloudinary:", error);
     });
   }
 
