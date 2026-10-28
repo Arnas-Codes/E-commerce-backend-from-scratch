@@ -1,9 +1,8 @@
 import mongoose from "mongoose";
 import Product from "../models/product.js";
 import asyncHandler from "../utils/asyncHandler.js";
-import InventoryMovement from "../models/inventoryMovement.js";
 
-import cloudinary from "cloudinary";
+import { v2 as cloudinary } from "cloudinary";
 import fs from "fs/promises";
 import path from "path";
 
@@ -216,7 +215,6 @@ export const updateProduct = asyncHandler(async (req, res) => {
   }
 });
 
-// Deleting Product
 export const deleteProduct = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
@@ -227,6 +225,7 @@ export const deleteProduct = asyncHandler(async (req, res) => {
   }
 
   const product = await Product.findById(id);
+
   if (!product) {
     return res.status(404).json({
       message: "Product not found",
@@ -243,13 +242,19 @@ export const deleteProduct = asyncHandler(async (req, res) => {
     }); */
 
     // for cloudinary storage
-    const oldPublicId = extractPublicIdFromUrl(product.image);
-    await cloudinary.uploader.destroy(oldPublicId).catch((error) => {
-      console.error("Failed to delete image from Cloudinary:", error);
-    });
+
+    const publicId = extractPublicIdFromUrl(product.image);
+
+    if (publicId) {
+      const result = await cloudinary.uploader.destroy(publicId, {
+        invalidate: true,
+      });
+
+      console.log("Cloudinary deletion result:", result);
+    }
   }
 
-  res.status(200).json({
+  return res.status(200).json({
     message: "Product deleted successfully",
   });
 });

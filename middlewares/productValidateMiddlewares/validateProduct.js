@@ -1,12 +1,24 @@
 import fs from "fs/promises";
 import path from "path";
+import { v2 as cloudinary } from "cloudinary";
 
 export const validateProduct = async (req, res, next) => {
   const reject = async (message) => {
-    if (req.file) {
+    // for local storage
+    /* if (req.file) {
       await fs.unlink(path.resolve(req.file.path)).catch((error) => {
         console.err;
         or("Failed to clean up uploaded image:", error);
+      });
+    } */
+
+    // for cloudinary storage
+    if (req.file.filename) {
+      await cloudinary.uploader.destroy(req.file.filename).catch((error) => {
+        console.error(
+          "Failed to clean up uploaded image from Cloudinary:",
+          error,
+        );
       });
     }
 

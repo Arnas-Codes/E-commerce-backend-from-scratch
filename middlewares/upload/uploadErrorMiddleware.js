@@ -5,9 +5,9 @@ const uploadErrorMiddleware = (err, req, res, next) => {
     });
   }
 
-  if (err.code === "LIMIT_FILE_COUNT") {
+  if (err.code === "LIMIT_FILE_COUNT" || err.code === "LIMIT_UNEXPECTED_FILE") {
     return res.status(400).json({
-      message: "Only one file is allowed",
+      message: "Only one image file is allowed. Use the field name 'image'.",
     });
   }
 
