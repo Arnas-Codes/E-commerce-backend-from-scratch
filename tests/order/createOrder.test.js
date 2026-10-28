@@ -37,7 +37,7 @@ describe("createOrder", () => {
   next = vi.fn();
 
   afterEach(() => {
-    vi.resetAllMocks();
+    vi.restoreAllMocks();
   });
 
   it("creates an order successfully", async () => {
