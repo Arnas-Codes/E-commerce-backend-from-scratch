@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
-import { validateGetAllOrders } from "../../../middlewares/orderValidateMiddlewares/orderValidate.js";
-import { validateReturnOrder } from "../../../middlewares/orderValidateMiddlewares/validateReturnOrder.js";
+import { validateGetAllOrders } from "../../middlewares/orderValidateMiddlewares/orderValidate.js";
+import { validateReturnOrder } from "../../middlewares/orderValidateMiddlewares/validateReturnOrder.js";
 import mongoose from "mongoose";
 
 describe("validateGetAllOrders", () => {

@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import mongoose from "mongoose";
 
-import { createOrder } from "../../../../controllers/orderController";
-import Cart from "../../../../models/cart";
-import Product from "../../../../models/product";
-import Order from "../../../../models/order";
-import InventoryMovement from "../../../../models/inventoryMovement";
+import { createOrder } from "../../controllers/orderController";
+import Cart from "../../models/cart";
+import Product from "../../models/product";
+import Order from "../../models/order";
+import InventoryMovement from "../../models/inventoryMovement";
 
 describe("createOrder", () => {
   let fakeSession;

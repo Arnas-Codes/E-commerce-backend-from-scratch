@@ -1,9 +1,9 @@
 import mongoose from "mongoose";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import Order from "../../../models/order";
-import Product from "../../../models/product";
-import InventoryMovement from "../../../models/inventoryMovement";
-import { returnOrder } from "../../../controllers/orderController";
+import Order from "../../models/order";
+import Product from "../../models/product";
+import InventoryMovement from "../../models/inventoryMovement";
+import { returnOrder } from "../../controllers/orderController";
 
 describe("returnOrder", () => {
   let fakeSession;

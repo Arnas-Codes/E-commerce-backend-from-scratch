@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import Order from "../../../models/order";
-import Payment from "../../../models/payment";
-import { createPayment } from "../../../controllers/paymentController";
+import Order from "../../models/order";
+import Payment from "../../models/payment";
+import { createPayment } from "../../controllers/paymentController";
 
 describe("createPayment", () => {
   let req;

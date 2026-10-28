@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, afterEach, beforeEach } from "vitest";
-import { getRevenueStats } from "../../../controllers/orderController";
-import Order from "../../../models/order";
+import { getRevenueStats } from "../../controllers/orderController";
+import Order from "../../models/order";
 
 describe("getRevenueStats", () => {
   let req;
