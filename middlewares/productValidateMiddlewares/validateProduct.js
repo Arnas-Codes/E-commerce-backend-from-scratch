@@ -13,7 +13,7 @@ export const validateProduct = async (req, res, next) => {
     } */
 
     // for cloudinary storage
-    if (req.file.filename) {
+    if (req.file?.filename) {
       await cloudinary.uploader.destroy(req.file.filename).catch((error) => {
         console.error(
           "Failed to clean up uploaded image from Cloudinary:",

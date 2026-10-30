@@ -460,7 +460,7 @@ describe("createOrder integration", () => {
     ).toBe(1);
   });
 
-  it.only("rolls back when idempotency key fails to save", async () => {
+  it("rolls back when idempotency key fails to save", async () => {
     const user = await User.create({
       name: "Test User",
       email: uniqueEmail(),
