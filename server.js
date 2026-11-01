@@ -1,9 +1,9 @@
 import "dotenv/config";
 import app from "./app.js";
 import connectDB from "./config/db.js";
+import redisClient from "./config/redis.js";
 import https from "https";
 import fs from "fs";
-import redisClient from "./config/redis.js";
 
 try {
   await connectDB();
@@ -14,21 +14,25 @@ try {
 }
 
 try {
-  redisClient.connect().catch((error) => {
-    console.error("Redis connection failed:", error.message);
-  });
+  await redisClient.connect();
   console.log("Redis connected");
 } catch (error) {
   console.error("Redis unavailable at startup:", error.message);
 }
 
-const options = {
-  key: fs.readFileSync("./cert/private-key.pem"),
-  cert: fs.readFileSync("./cert/certificate.pem"),
-};
-
 const PORT = process.env.PORT || 3000;
 
-https.createServer(options, app).listen(PORT, () => {
-  console.log(`HTTPS server is running on port ${PORT}`);
-});
+if (process.env.NODE_ENV === "production") {
+  app.listen(PORT, () => {
+    console.log(`HTTP server running on port ${PORT}`);
+  });
+} else {
+  const options = {
+    key: fs.readFileSync("./cert/private-key.pem"),
+    cert: fs.readFileSync("./cert/certificate.pem"),
+  };
+
+  https.createServer(options, app).listen(PORT, () => {
+    console.log(`HTTPS server running on port ${PORT}`);
+  });
+}
