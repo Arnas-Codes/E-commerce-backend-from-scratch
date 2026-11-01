@@ -8,12 +8,18 @@ import redisClient from "./config/redis.js";
 try {
   await connectDB();
   console.log("MongoDB connected");
-
-  await redisClient.connect();
-  console.log("Redis connected");
 } catch (error) {
   console.error("Startup failed:", error.message);
   process.exit(1);
+}
+
+try {
+  redisClient.connect().catch((error) => {
+    console.error("Redis connection failed:", error.message);
+  });
+  console.log("Redis connected");
+} catch (error) {
+  console.error("Redis unavailable at startup:", error.message);
 }
 
 const options = {
@@ -25,4 +31,4 @@ const PORT = process.env.PORT || 3000;
 
 https.createServer(options, app).listen(PORT, () => {
   console.log(`HTTPS server is running on port ${PORT}`);
-}); 
+});
