@@ -21,6 +21,8 @@ import uploadErrorMiddleware from "./middlewares/upload/uploadErrorMiddleware.js
 
 const app = express();
 
+const isLoadTest = process.env.LOAD_TEST_MODE === "true";
+
 app.use(helmet());
 
 app.use(compression());
@@ -36,7 +38,7 @@ app.use((req, res, next) => {
   next();
 });
 
-if (process.env.NODE_ENV !== "test") {
+if (process.env.NODE_ENV !== "test" && !isLoadTest) {
   app.use(apiLimiter);
 }
 
