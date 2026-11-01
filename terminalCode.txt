@@ -5,6 +5,8 @@ $env:LOAD_TEST_MODE="true"
 npm run dev
 
 npx artillery run --output load-report-2.json load-test.yml
+or
+npx artillery run load-test.yml
 ---
 ====================================================
 For processor info

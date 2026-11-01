@@ -22,6 +22,7 @@ redisClient.on("end", () => {
 
 redisClient.on("reconnecting", () => {
   setRedisAvailable(false);
+  console.log("Using local memory store for rate limiting due to Redis unavailability");
   console.log("Redis reconnecting...");
 });
 

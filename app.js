@@ -36,7 +36,7 @@ app.use((req, res, next) => {
   next();
 });
 
-if (process.env.NODE_ENV === "development") {
+if (process.env.NODE_ENV !== "test") {
   app.use(apiLimiter);
 }
 
