@@ -56,13 +56,15 @@ app.use("/payment", paymentRoutes);
 app.use("/inventory-movements", InventoryMovementRoutes);
 app.use("/inventory", inventoryRoutes);
 
-if (process.env.NODE_ENV === "test") {
+if (process.env.NODE_ENV !== "production") {
   // test route for redis connection
   app.get("/redis-test", async (req, res) => {
     await redisClient.set("test:name", "Arnas", { EX: 10 });
 
     const value = await redisClient.get("test:name");
     const ttl = await redisClient.ttl("test:name");
+
+    console.log(`Value: ${value}, TTL: ${ttl}`);
 
     res.json({
       value,
