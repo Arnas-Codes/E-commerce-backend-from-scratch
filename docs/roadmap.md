@@ -13,7 +13,7 @@ Priorities reflect the current source and test coverage, not a product plan.
 - **Fix validator correctness.** Repair cart type checks, import `mongoose` in order-query validation, validate payment IDs/ObjectIds, validate order status values at the middleware boundary, and align inventory movement query types with the schema.
 - **Harden payment authorization.** The mounted fail-payment handler ignores `paymentId` and searches by authenticated user; make the route parameter authoritative and define the intended admin/user behavior.
 - **Add route-level tests for every mounted endpoint.** Prioritize product mutations, cart operations, inventory, payment transitions, admin reports, and upload failures.
-- **Define Redis outage semantics.** The fallback is process-local and does not merge memory counters after Redis recovery. Decide whether this is acceptable or implement an explicit synchronization policy.
+- **Decide whether stricter distributed limits are needed during Redis outages.** The fallback preserves local request counts across store switches but cannot share outage traffic between processes or preserve local history across restarts. Consider rejecting requests during outages if strict shared limits are required.
 
 ## Medium
 

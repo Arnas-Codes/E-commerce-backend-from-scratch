@@ -47,4 +47,4 @@ Route middleware order matters. For example, product mutations authenticate and 
 - Orders read a user cart, validate stock, create order and inventory records, decrement stock, delete the cart, and save an idempotency key in one transaction.
 - Payment confirmation updates both payment and order status in one transaction.
 - Product image uploads use Cloudinary-backed Multer storage.
-- Redis stores the three rate-limit namespaces; `FallbackRateLimitStore` uses `MemoryStore` when Redis is unavailable.
+- Redis stores the three rate-limit namespaces. `FallbackRateLimitStore` maintains local counters on every request and uses them during outages; when Redis responds, it enforces the higher of the local and shared counts. A background heartbeat detects idle connection failures.

@@ -1,7 +1,7 @@
 import "dotenv/config";
 import app from "./app.js";
 import connectDB from "./config/db.js";
-import redisClient from "./config/redis.js";
+import { connectRedis } from "./config/redis.js";
 import https from "https";
 import fs from "fs";
 
@@ -13,12 +13,7 @@ try {
   process.exit(1);
 }
 
-try {
-  await redisClient.connect();
-  console.log("Redis connected");
-} catch (error) {
-  console.error("Redis unavailable at startup:", error.message);
-}
+void connectRedis();
 
 const PORT = process.env.PORT || 3000;
 

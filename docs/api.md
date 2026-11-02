@@ -95,6 +95,6 @@ Movement types include `sale`, `restock`, `return`, `damage`, `adjustment`, and 
 
 ## Utility routes
 
-- `GET /redis-test` writes and reads a short-lived Redis key. It is a diagnostic route, not a business API.
+- `GET /redis-test` writes and reads a short-lived Redis key. Available outside production; returns `503` with `Redis is unavailable.` when Redis is offline or a command fails.
 - `POST /test-upload` accepts one `image` upload using the Cloudinary uploader and returns the uploaded file metadata.
 - `/uploads` serves the local `uploads` directory.

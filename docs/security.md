@@ -26,7 +26,13 @@ Validation is inconsistent. For example, cart type checks compare values to the 
 
 The global API limiter uses Redis prefix `rl:api:` and allows 100 requests per IP per 15 minutes. Registration uses `rl:register:` with five requests per IP per hour, and login uses `rl:login:` with five requests per IP per 15 minutes.
 
-`FallbackRateLimitStore` delegates to `rate-limit-redis` while Redis is available and to an independent `MemoryStore` when it is not. Redis recovery resumes Redis-backed counting; memory counters are not migrated into Redis. The fallback is process-local and therefore is not a distributed limit during an outage.
+`FallbackRateLimitStore` updates a local `MemoryStore` for every request and also updates `rate-limit-redis` while Redis is available. It enforces the higher count and reports the later reset time. This preserves requests seen by the current process across outages and recovery instead of granting a fresh local allowance. Memory counters are not migrated into Redis; requests handled by other processes during an outage are not shared. Strict distributed limits during an outage are therefore not guaranteed, and local history is lost on a process restart.
+
+Redis connects in the background without blocking server startup. Offline queuing is disabled and the pending command queue is capped at 1,000. Rate-limit commands and diagnostics use `sendRedisCommand`, which applies an explicit one-second response deadline in addition to the client's queue timeout. A timed-out command may still execute on Redis, so counts can be conservative. Store initialization is lazy. After a store failure, requests use memory for five seconds; one request then probes Redis while concurrent requests continue using memory. An older successful request cannot clear a newer failure's cooldown. Each limiter checks the client's `isReady` property directly.
+
+One heartbeat runs every five seconds while connected, even with no HTTP traffic. If its reply fails or exceeds the one-second deadline, the client closes the stale connection and reconnects. Silent outages are normally detected within about six seconds, subject to event-loop delays. Reconnection uses capped exponential delays with random jitter; socket connection and idle timeouts also bound connection establishment and stalled handshakes.
+
+Store setup is silent. `[Redis]` logs connection availability and one warning per outage, including the reason and local-memory fallback. A successful reconnection logs availability again. `[Rate limit <prefix>]` logs store-specific command/initialization failures once per failure period and recovery after a successful probe; these can occur while the connection itself remains ready. The configured API, login, and registration policies count every request.
 
 The three prefixes are distinct, so the global and route-specific limiters can intentionally count the same request without triggering `ERR_ERL_DOUBLE_COUNT`.
 

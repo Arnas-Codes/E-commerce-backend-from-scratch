@@ -5,7 +5,7 @@ import { apiLimiter } from "./middlewares/authValidateMiddlewares/rateLimit.js";
 import helmet from "helmet";
 import errorHandler from "./middlewares/authValidateMiddlewares/errorMiddleware.js";
 import compression from "compression";
-import redisClient from "./config/redis.js";
+import redisClient, { sendRedisCommand } from "./config/redis.js";
 
 import productRoutes from "./routes/productRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -59,17 +59,22 @@ app.use("/inventory", inventoryRoutes);
 if (process.env.NODE_ENV !== "production") {
   // test route for redis connection
   app.get("/redis-test", async (req, res) => {
-    await redisClient.set("test:name", "Arnas", { EX: 10 });
+    if (!redisClient.isReady) {
+      return res.status(503).json({ message: "Redis is unavailable." });
+    }
 
-    const value = await redisClient.get("test:name");
-    const ttl = await redisClient.ttl("test:name");
+    try {
+      await sendRedisCommand(["SET", "test:name", "Arnas", "EX", "10"]);
 
-    console.log(`Value: ${value}, TTL: ${ttl}`);
+      const [value, ttl] = await Promise.all([
+        sendRedisCommand(["GET", "test:name"]),
+        sendRedisCommand(["TTL", "test:name"]),
+      ]);
 
-    res.json({
-      value,
-      ttl,
-    });
+      res.json({ value, ttl });
+    } catch {
+      res.status(503).json({ message: "Redis is unavailable." });
+    }
   });
 }
 

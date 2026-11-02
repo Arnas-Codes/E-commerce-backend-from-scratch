@@ -43,6 +43,8 @@ Use the existing test setup and Supertest for route behavior. Use isolated model
 
 Rate limiting is disabled in test mode unless `TEST_RATE_LIMIT=true`. The application-level Redis connection is not automatically opened by the test setup, so rate-limit tests exercise the memory fallback unless a test explicitly controls Redis state.
 
+Run `npm run test:redis` for Redis connection, fallback-store, and `/redis-test` route tests without MongoDB or an external Redis server. Most tests use fake clients and stores. `redisHeartbeat.test.js` uses the real Redis client against a local TCP peer that stops replying while keeping its socket open; it verifies outage logging without HTTP traffic and reconnection after replies resume. The suite also covers response deadlines, quiet startup, local counter continuity, shared initialization, a single recovery probe, and diagnostic responses during outages. It does not replace integration testing against a real Redis deployment.
+
 ## Current limitations
 
 - No coverage command is configured.

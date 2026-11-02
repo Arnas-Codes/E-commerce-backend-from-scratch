@@ -1,20 +1,16 @@
 import rateLimit from "express-rate-limit";
 import { RedisStore } from "rate-limit-redis";
 
-import redisClient from "../../config/redis.js";
+import redisClient, { sendRedisCommand } from "../../config/redis.js";
 import FallbackRateLimitStore from "../../config/fallbackRateLimitStore.js";
 
 const createRateLimitStore = (prefix) => {
   const redisStore = new RedisStore({
-    sendCommand: (...args) => redisClient.sendCommand(args),
+    sendCommand: (...args) => sendRedisCommand(args),
     prefix,
   });
 
-  const store = new FallbackRateLimitStore(redisStore);
-
-  store.name = prefix;
-
-  return store;
+  return new FallbackRateLimitStore(redisStore, () => redisClient.isReady);
 };
 
 export const apiLimiter = rateLimit({
