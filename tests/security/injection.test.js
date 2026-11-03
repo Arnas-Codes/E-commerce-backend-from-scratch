@@ -1,10 +1,15 @@
-import { it } from "vitest";
+import { expect, it, vi } from "vitest";
 import request from "supertest";
 import app from "../../app.js";
-import { expect } from "vitest";
 import jwt from "jsonwebtoken";
 import User from "../../models/user.js";
-import mongoose from "mongoose";
+
+// Keep injection checks independent of the real rate-limit tests.
+vi.mock("../../middlewares/authValidateMiddlewares/rateLimit.js", () => ({
+  apiLimiter: (_req, _res, next) => next(),
+  loginLimiter: (_req, _res, next) => next(),
+  registerLimiter: (_req, _res, next) => next(),
+}));
 
 const uniqueEmail = () => `testuser_${Date.now()}@example.com`;
 

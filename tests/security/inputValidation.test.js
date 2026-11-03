@@ -1,9 +1,14 @@
-import { it } from "vitest";
+import { expect, it, vi } from "vitest";
 import request from "supertest";
 import app from "../../app.js";
 import jwt from "jsonwebtoken";
 import User from "../../models/user.js";
-import { expect } from "vitest";
+
+vi.mock("../../middlewares/authValidateMiddlewares/rateLimit.js", () => ({
+  apiLimiter: (_req, _res, next) => next(),
+  loginLimiter: (_req, _res, next) => next(),
+  registerLimiter: (_req, _res, next) => next(),
+}));
 
 const uniqueEmail = () => `testuser_${Date.now()}@example.com`;
 it("rejects invalid email addresses", async () => {
@@ -59,7 +64,14 @@ it("rejects non-string password", async () => {
     email: uniqueEmail(),
   };
 
-  const nonStringPasswords = [123456, null, true, ["123456"], { $gte: "" },undefined];
+  const nonStringPasswords = [
+    123456,
+    null,
+    true,
+    ["123456"],
+    { $gte: "" },
+    undefined,
+  ];
 
   for (const password of nonStringPasswords) {
     const response = await request(app)
@@ -67,6 +79,9 @@ it("rejects non-string password", async () => {
       .send({ ...basePayload, password });
 
     expect(response.status).toBe(400);
+    expect(response.body.message).toBe(
+      "Password must be at least 6 characters long",
+    );
   }
 });
 
