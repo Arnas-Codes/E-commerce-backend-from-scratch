@@ -8,7 +8,7 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Get the repository code
@@ -22,5 +22,58 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run Redis tests
-        run: npm run test:redis
+      - name: Start test MongoDB
+        run: |
+          docker run -d --name mongo-ci \
+            -p 127.0.0.1:27017:27017 \
+            mongo:8.0 \
+            --replSet rs0 --bind_ip_all
+
+      - name: Wait for MongoDB
+        timeout-minutes: 2
+        run: |
+          for attempt in {1..30}; do
+            if docker exec mongo-ci mongosh --quiet --eval 'db.adminCommand({ ping: 1 })'; then
+              echo "MongoDB is responding"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "MongoDB did not become ready"
+          exit 1
+
+      - name: Initialize test replica set
+        timeout-minutes: 2
+        run: |
+          docker exec mongo-ci mongosh --quiet --eval '
+            const result = rs.initiate({
+              _id: "rs0",
+              members: [{ _id: 0, host: "localhost:27017" }]
+            });
+            if (result.ok !== 1) throw new Error(JSON.stringify(result));
+          '
+
+          for attempt in {1..30}; do
+            if docker exec mongo-ci mongosh --quiet --eval 'quit(db.hello().isWritablePrimary ? 0 : 1)'; then
+              echo "MongoDB is ready for writes"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "MongoDB did not become writable"
+          exit 1
+
+      - name: Run full test suite
+        timeout-minutes: 5
+        env:
+          NODE_ENV: test
+          MONGO_TEST_URI: "mongodb://127.0.0.1:27017/backend_ci_test?replicaSet=rs0&directConnection=true"
+          JWT_SECRET: "ci-only-test-signing-key"
+        run: npm run test:ci
+
+      - name: Show MongoDB diagnostics on failure
+        if: ${{ failure() }}
+        run: |
+          docker ps -a
+          docker logs --tail 100 mongo-ci
+          docker inspect mongo-ci --format '{{json .State}}'
