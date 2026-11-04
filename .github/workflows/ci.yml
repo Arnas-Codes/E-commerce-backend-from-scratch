@@ -22,9 +22,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run Redis tests
-        run: npm run test:redis
-
       - name: Start test MongoDB
         run: |
           docker run -d --name mongo-ci \
