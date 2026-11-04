@@ -24,3 +24,6 @@ jobs:
 
       - name: Run Redis tests
         run: npm run test:redis
+
+      - name: Deliberately fail CI
+        run: exit 1
