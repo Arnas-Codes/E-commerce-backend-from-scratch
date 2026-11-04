@@ -73,3 +73,10 @@ jobs:
           MONGO_TEST_URI: "mongodb://127.0.0.1:27017/backend_ci_test?replicaSet=rs0&directConnection=true"
           JWT_SECRET: "ci-only-test-signing-key"
         run: npm run test:ci
+
+      - name: Show MongoDB diagnostics on failure
+        if: ${{ failure() }}
+        run: |
+          docker ps -a
+          docker logs --tail 100 mongo-ci
+          docker inspect mongo-ci --format '{{json .State}}'
