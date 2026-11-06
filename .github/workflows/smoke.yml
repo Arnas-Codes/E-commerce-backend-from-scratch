@@ -1,0 +1,26 @@
+name: Live API smoke test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 3
+
+    steps:
+      - name: Get the repository code
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+
+      - name: Check the live products API
+        env:
+          API_BASE_URL: "https://e-commerce-backend-from-scratch.onrender.com"
+        run: npm run test:smoke
