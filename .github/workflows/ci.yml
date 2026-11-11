@@ -101,7 +101,7 @@ jobs:
       - name: Deploy to Render and wait until live
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
-          RENDER_SERVICE_ID: ${{ vars.RENDER_SERVICE_ID }}
+          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
         run: node scripts/deploy-render.js
 
       - name: Check the live products API
