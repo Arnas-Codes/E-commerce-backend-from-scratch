@@ -18,7 +18,7 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: "24"
-          
+
       - name: Install dependencies
         run: npm ci
 
@@ -77,3 +77,34 @@ jobs:
           docker ps -a
           docker logs --tail 100 mongo-ci
           docker inspect mongo-ci --format '{{json .State}}'
+
+  deploy:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    concurrency:
+      group: render-production
+      cancel-in-progress: false
+
+    steps:
+      - name: Get the repository code
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+
+      - name: Deploy to Render and wait until live
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ vars.RENDER_SERVICE_ID }}
+        run: node scripts/deploy-render.js
+
+      - name: Check the live products API
+        env:
+          API_BASE_URL: "https://e-commerce-backend-from-scratch.onrender.com"
+        run: node scripts/smoke-test.js
